@@ -874,9 +874,7 @@
           msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${(p.photos || []).length})
 `;
         });
-        msg += `
-📌 Total unidades: ${prods.reduce((a, p) => a + (p.qty || 0), 0)}
-`;
+        // total oculto en mensaje (solo web)
       } else {
         msg += `🧺 Productos: (pendiente)
 `;
