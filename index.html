@@ -250,6 +250,7 @@
 
       <div class="row wrap mt">
         <button id="btnShareWhatsapp" class="btn">✅ Compartir (con fotos si se puede)</button>
+        <button id="btnShareWhatsappOne" class="btn ghost">📤 Compartir 1x y limpiar</button>
         <button id="btnOpenWhatsappText" class="btn ghost">💬 Abrir WhatsApp (solo texto)</button>
         <button id="btnDownloadZip" class="btn ghost">⬇️ Descargar paquete .zip</button>
       </div>
@@ -300,6 +301,7 @@
 
     const messageBox = el("messageBox");
     const btnShareWhatsapp = el("btnShareWhatsapp");
+    const btnShareWhatsappOne = el("btnShareWhatsappOne");
     const btnOpenWhatsappText = el("btnOpenWhatsappText");
     const btnDownloadZip = el("btnDownloadZip");
     const btnReset = el("btnReset");
@@ -758,10 +760,13 @@
       return files;
     }
 
-    async function shareWhatsappWithFilesIfPossible() {
+    async function shareWhatsappWithFilesIfPossible(resetAfter = false) {
       const text = messageBox.value || buildMessage();
       const files = blobsToFiles();
       const canShareFiles = !!navigator.canShare && files.length > 0 && navigator.canShare({ files });
+
+      let usedNativeShare = false;
+      let attachedFiles = false;
 
       if (navigator.share && (canShareFiles || files.length === 0)) {
         try {
@@ -770,15 +775,28 @@
             text,
             files: canShareFiles ? files : undefined
           });
-          toast("✅ Compartido.");
-          return;
+          usedNativeShare = true;
+          attachedFiles = canShareFiles;
+          toast(attachedFiles ? "✅ Compartido con fotos." : "✅ Compartido.");
         } catch (e) {
           console.warn(e);
         }
       }
 
-      window.open(waUrlFromText(text), "_blank");
-      toast("💬 Abrí WhatsApp con el texto. Si no adjuntó fotos, usa ZIP para mandarlas rápido.");
+      if (!usedNativeShare) {
+        window.open(waUrlFromText(text), "_blank");
+        toast("💬 Abrí WhatsApp con el texto. Si no adjuntó fotos, usa ZIP para enviarlas.");
+      }
+
+      // Si el usuario quiere "1x y limpiar", solo lo hacemos cuando realmente
+      // se adjuntaron fotos con el share nativo (para no perderlas en PC).
+      if (resetAfter) {
+        if (usedNativeShare && attachedFiles) {
+          resetAll();
+        } else {
+          toast("⚠️ Aquí no pude adjuntar fotos automáticamente. No limpié para no perderlas. Usa ZIP o Limpiar manualmente.");
+        }
+      }
     }
 
     function openWhatsappTextOnly() {
@@ -858,7 +876,8 @@
 
     trackingInput.addEventListener("input", buildMessage);
 
-    btnShareWhatsapp.addEventListener("click", shareWhatsappWithFilesIfPossible);
+    btnShareWhatsapp.addEventListener("click", () => shareWhatsappWithFilesIfPossible(false));
+    btnShareWhatsappOne.addEventListener("click", () => shareWhatsappWithFilesIfPossible(true));
     btnOpenWhatsappText.addEventListener("click", openWhatsappTextOnly);
     btnDownloadZip.addEventListener("click", downloadZip);
 
