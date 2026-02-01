@@ -242,6 +242,19 @@
       </div>
     </section>
 
+
+    <section class="card">
+      <h2>📚 Trackings guardados</h2>
+      <div class="small">Aquí quedan guardados para que el total no se pierda y puedas compartir 1 por 1.</div>
+
+      <div id="loadsList" class="list mt"></div>
+
+      <div class="totals">
+        <div><span class="k">Trackings:</span> <span id="loadsCount">0</span></div>
+        <div><span class="k">Tip:</span> usa “📤 Compartir 1 tracking” cuando termines uno.</div>
+      </div>
+    </section>
+
     <section class="card">
       <h2>3) Compartir por WhatsApp</h2>
 
@@ -250,7 +263,7 @@
 
       <div class="row wrap mt">
         <button id="btnShareWhatsapp" class="btn">✅ Compartir (con fotos si se puede)</button>
-        <button id="btnShareWhatsappOne" class="btn ghost">📤 Compartir 1x y limpiar</button>
+        <button id="btnShareWhatsappOne" class="btn ghost">📤 Compartir 1 tracking</button>
         <button id="btnOpenWhatsappText" class="btn ghost">💬 Abrir WhatsApp (solo texto)</button>
         <button id="btnDownloadZip" class="btn ghost">⬇️ Descargar paquete .zip</button>
       </div>
@@ -311,6 +324,9 @@
     const ocrLabel = el("ocrLabel");
     const shareHint = el("shareHint");
 
+    const loadsList = el("loadsList");
+    const loadsCount = el("loadsCount");
+
     let stream = null;
     let facingMode = "environment";
     let torchOn = false;
@@ -322,7 +338,8 @@
     const state = {
       labelPhotos: [],
       currentProductPhotos: [],
-      products: []
+      products: [],
+      loads: []
     };
 
     function setCamStatus(on, msg) {
@@ -697,8 +714,12 @@
         productList.appendChild(box);
       });
 
-      totalProducts.textContent = String(state.products.length);
-      totalUnits.textContent = String(state.products.reduce((a, p) => a + (p.qty || 0), 0));
+      const currentUnits = state.products.reduce((a, p) => a + (p.qty || 0), 0);
+      const savedProducts = state.loads.reduce((a, l) => a + ((l.products || []).length), 0);
+      const savedUnits = state.loads.reduce((a, l) => a + (l.products || []).reduce((aa, p) => aa + (p.qty || 0), 0), 0);
+
+      totalProducts.textContent = String(state.products.length + savedProducts);
+      totalUnits.textContent = String(currentUnits + savedUnits);
     }
 
     function renderAll() {
@@ -716,27 +737,169 @@
       });
 
       renderProducts();
+
+    function countPhotosInLoad(load) {
+      const prodPhotos = (load.products || []).reduce((a, p) => a + ((p.photos || []).length), 0);
+      return { label: (load.labelPhotos || []).length, prod: prodPhotos };
+    }
+
+    function removeLoad(loadIdx) {
+      const load = state.loads[loadIdx];
+      if (!load) return;
+
+      // liberar URLs
+      (load.labelPhotos || []).forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+      (load.products || []).forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
+
+      state.loads.splice(loadIdx, 1);
+      renderAll();
+      buildMessage();
+      toast("🗑️ Tracking eliminado.");
+    }
+
+    function renderLoads() {
+      if (!loadsList || !loadsCount) return;
+      loadsCount.textContent = String(state.loads.length);
+
+      loadsList.innerHTML = "";
+      if (!state.loads.length) {
+        loadsList.innerHTML = `<div class="small">Aún no has guardado trackings.</div>`;
+        return;
+      }
+
+      state.loads.forEach((load, idx) => {
+        const units = (load.products || []).reduce((a, p) => a + (p.qty || 0), 0);
+        const photos = countPhotosInLoad(load);
+
+        const box = document.createElement("div");
+        box.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "itemTop";
+
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="itemTitle">🔎 ${escapeHtml(load.tracking || "(sin tracking)")}</div>
+          <div class="itemMeta">Productos: ${(load.products || []).length} • Unidades: ${units} • Fotos etiqueta: ${photos.label} • Fotos productos: ${photos.prod}</div>
+        `;
+
+        const right = document.createElement("div");
+        right.className = "itemBtns";
+
+        const btnShare = document.createElement("button");
+        btnShare.className = "btnMini";
+        btnShare.textContent = "Compartir";
+        btnShare.onclick = () => shareLoad(load);
+
+        const btnZip = document.createElement("button");
+        btnZip.className = "btnMini";
+        btnZip.textContent = "ZIP";
+        btnZip.onclick = () => downloadZipForLoad(load);
+
+        const btnDel = document.createElement("button");
+        btnDel.className = "btnMini danger";
+        btnDel.textContent = "Eliminar";
+        btnDel.onclick = () => removeLoad(idx);
+
+        right.appendChild(btnShare);
+        right.appendChild(btnZip);
+        right.appendChild(btnDel);
+
+        top.appendChild(left);
+        top.appendChild(right);
+
+        // Preview de 4 fotos (etiqueta + productos)
+        const gal = document.createElement("div");
+        gal.className = "gallery";
+
+        const previews = [];
+        (load.labelPhotos || []).forEach(p => previews.push(p.url));
+        (load.products || []).forEach(pr => (pr.photos || []).forEach(ph => previews.push(ph.url)));
+
+        previews.slice(0, 4).forEach((url) => {
+          const t = document.createElement("div");
+          t.className = "thumb";
+          const img = document.createElement("img");
+          img.src = url;
+          t.appendChild(img);
+          gal.appendChild(t);
+        });
+
+        box.appendChild(top);
+        if (previews.length) box.appendChild(gal);
+
+        loadsList.appendChild(box);
+      });
+    }
+
+    function resetCurrentEntry() {
+      // Solo borramos el tracking actual (para empezar otro) sin tocar el historial.
+      state.currentProductPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+      state.currentProductPhotos = [];
+
+      state.labelPhotos = [];
+      state.products = [];
+
+      trackingInput.value = "";
+      ocrRaw.value = "";
+      productName.value = "";
+      productQty.value = "1";
+      messageBox.value = "";
+
+      renderAll();
+    }
+
+      renderLoads();
+    }
+
+    function buildMessageForLoad(load) {
+      const tracking = (load.tracking || "").trim();
+      const dateStr = new Date(load.createdAt || Date.now()).toLocaleString();
+
+      let msg = `📦 Registro de carga
+🕒 ${dateStr}
+
+`;
+      msg += `🔎 Tracking: ${tracking || "(pendiente)"}
+`;
+      msg += `🧾 Fotos etiqueta: ${(load.labelPhotos || []).length}
+
+`;
+
+      const prods = load.products || [];
+      if (prods.length) {
+        msg += `🧺 Productos:
+`;
+        prods.forEach((p, i) => {
+          msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${(p.photos || []).length})
+`;
+        });
+        msg += `
+📌 Total unidades: ${prods.reduce((a, p) => a + (p.qty || 0), 0)}
+`;
+      } else {
+        msg += `🧺 Productos: (pendiente)
+`;
+      }
+
+      msg += `
+—
+Enviado desde mi registro web`;
+      return msg;
+    }
+
+    function getCurrentLoadSnapshot() {
+      return {
+        tracking: (trackingInput.value || "").trim(),
+        createdAt: Date.now(),
+        labelPhotos: state.labelPhotos,
+        products: state.products
+      };
     }
 
     function buildMessage() {
-      const tracking = (trackingInput.value || "").trim();
-      const dateStr = new Date().toLocaleString();
-
-      let msg = `📦 Registro de carga\n🕒 ${dateStr}\n\n`;
-      msg += `🔎 Tracking: ${tracking || "(pendiente)"}\n`;
-      msg += `🧾 Fotos etiqueta: ${state.labelPhotos.length}\n\n`;
-
-      if (state.products.length) {
-        msg += `🧺 Productos:\n`;
-        state.products.forEach((p, i) => {
-          msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${p.photos.length})\n`;
-        });
-        msg += `\n📌 Total unidades: ${state.products.reduce((a, p) => a + p.qty, 0)}\n`;
-      } else {
-        msg += `🧺 Productos: (pendiente)\n`;
-      }
-
-      msg += `\n—\nEnviado desde mi registro web`;
+      const snap = getCurrentLoadSnapshot();
+      const msg = buildMessageForLoad(snap);
       messageBox.value = msg;
       return msg;
     }
@@ -745,13 +908,13 @@
       return `https://wa.me/?text=${encodeURIComponent(text)}`;
     }
 
-    function blobsToFiles() {
+    function blobsToFilesForLoad(load) {
       const files = [];
-      state.labelPhotos.forEach((p, i) => {
+      (load.labelPhotos || []).forEach((p, i) => {
         files.push(new File([p.blob], p.name || `etiqueta-${i+1}.jpg`, { type: p.blob.type || "image/jpeg" }));
       });
-      state.products.forEach((prod, pi) => {
-        prod.photos.forEach((ph, fi) => {
+      (load.products || []).forEach((prod, pi) => {
+        (prod.photos || []).forEach((ph, fi) => {
           const safeName = (prod.name || `producto-${pi+1}`).replace(/[^\w\-]+/g, "_");
           const ext = (ph.blob.type || "").includes("png") ? "png" : "jpg";
           files.push(new File([ph.blob], `${safeName}-${pi+1}-${fi+1}.${ext}`, { type: ph.blob.type || "image/jpeg" }));
@@ -760,13 +923,15 @@
       return files;
     }
 
-    async function shareWhatsappWithFilesIfPossible(resetAfter = false) {
-      const text = messageBox.value || buildMessage();
-      const files = blobsToFiles();
+    function blobsToFiles() {
+      return blobsToFilesForLoad(getCurrentLoadSnapshot());
+    }
+
+    async function shareWhatsappWithFilesIfPossible(load, text) {
+      const files = blobsToFilesForLoad(load);
       const canShareFiles = !!navigator.canShare && files.length > 0 && navigator.canShare({ files });
 
       let usedNativeShare = false;
-      let attachedFiles = false;
 
       if (navigator.share && (canShareFiles || files.length === 0)) {
         try {
@@ -776,8 +941,7 @@
             files: canShareFiles ? files : undefined
           });
           usedNativeShare = true;
-          attachedFiles = canShareFiles;
-          toast(attachedFiles ? "✅ Compartido con fotos." : "✅ Compartido.");
+          toast(canShareFiles ? "✅ Compartido con fotos." : "✅ Compartido.");
         } catch (e) {
           console.warn(e);
         }
@@ -787,37 +951,67 @@
         window.open(waUrlFromText(text), "_blank");
         toast("💬 Abrí WhatsApp con el texto. Si no adjuntó fotos, usa ZIP para enviarlas.");
       }
+    }
 
-      // Si el usuario quiere "1x y limpiar", solo lo hacemos cuando realmente
-      // se adjuntaron fotos con el share nativo (para no perderlas en PC).
-      if (resetAfter) {
-        if (usedNativeShare && attachedFiles) {
-          resetAll();
-        } else {
-          toast("⚠️ Aquí no pude adjuntar fotos automáticamente. No limpié para no perderlas. Usa ZIP o Limpiar manualmente.");
-        }
-      }
+    async function shareCurrent() {
+      const text = messageBox.value || buildMessage();
+      const load = getCurrentLoadSnapshot();
+      await shareWhatsappWithFilesIfPossible(load, text);
+    }
+
+    async function shareLoad(load) {
+      const text = load.message || buildMessageForLoad(load);
+      await shareWhatsappWithFilesIfPossible(load, text);
+    }
+
+    async function archiveAndShareCurrent() {
+      const tracking = (trackingInput.value || "").trim();
+      const hasSomething = tracking || state.labelPhotos.length || state.products.length;
+      if (!hasSomething) return toast("⚠️ No hay nada que guardar/compartir todavía.");
+
+      // Guardar el tracking actual como un "lote" sin perder el total
+      const load = {
+        id: `load-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        createdAt: Date.now(),
+        tracking,
+        labelPhotos: state.labelPhotos,
+        products: state.products
+      };
+      load.message = messageBox.value || buildMessageForLoad(load);
+
+      // Lo guardamos en historial
+      state.loads.unshift(load);
+
+      // Compartimos este tracking (individual)
+      await shareLoad(load);
+
+      // Limpiamos SOLO el tracking actual (no el historial)
+      resetCurrentEntry();
+      renderLoads();
+      renderProducts(); // actualiza totales
+      buildMessage();
     }
 
     function openWhatsappTextOnly() {
+
       const text = messageBox.value || buildMessage();
       window.open(waUrlFromText(text), "_blank");
     }
 
-    async function downloadZip() {
+    async function downloadZipForLoad(load) {
       const zip = new JSZip();
-      const text = messageBox.value || buildMessage();
+      const text = load.message || buildMessageForLoad(load);
       zip.file("INFO.txt", text);
 
       const labelFolder = zip.folder("etiqueta");
-      state.labelPhotos.forEach((p, i) => labelFolder.file(p.name || `etiqueta-${i+1}.jpg`, p.blob));
+      (load.labelPhotos || []).forEach((p, i) => labelFolder.file(p.name || `etiqueta-${i+1}.jpg`, p.blob));
 
       const prodFolder = zip.folder("productos");
-      state.products.forEach((prod, pi) => {
+      (load.products || []).forEach((prod, pi) => {
         const safe = (prod.name || `producto-${pi+1}`).replace(/[^\w\-]+/g, "_");
         const f = prodFolder.folder(`${pi+1}-${safe}`);
-        f.file("detalle.txt", `${prod.qty} x ${prod.name}\nFotos: ${prod.photos.length}`);
-        prod.photos.forEach((ph, fi) => {
+        f.file("detalle.txt", `${prod.qty} x ${prod.name}\nFotos: ${(prod.photos || []).length}`);
+        (prod.photos || []).forEach((ph, fi) => {
           const ext = (ph.blob.type || "").includes("png") ? "png" : "jpg";
           f.file(`foto-${fi+1}.${ext}`, ph.blob);
         });
@@ -826,26 +1020,44 @@
       const blob = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `registro-carga-${Date.now()}.zip`;
+      a.download = `registro-carga-${(load.tracking || "tracking")}-${Date.now()}.zip`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
       toast("⬇️ ZIP descargado.");
     }
 
+    async function downloadZip() {
+      const load = getCurrentLoadSnapshot();
+      load.message = messageBox.value || buildMessageForLoad(load);
+      await downloadZipForLoad(load);
+    }
+
     function resetAll() {
+
       stopCamera();
+
+      // Liberar URLs del tracking actual
       state.labelPhotos.forEach(p => URL.revokeObjectURL(p.url));
       state.currentProductPhotos.forEach(p => URL.revokeObjectURL(p.url));
       state.products.forEach(pr => pr.photos.forEach(ph => URL.revokeObjectURL(ph.url)));
 
+      // Liberar URLs del historial
+      state.loads.forEach(load => {
+        (load.labelPhotos || []).forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+        (load.products || []).forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
+      });
+
       state.labelPhotos = [];
       state.currentProductPhotos = [];
       state.products = [];
+      state.loads = [];
+
       trackingInput.value = "";
       ocrRaw.value = "";
       productName.value = "";
       productQty.value = "1";
       messageBox.value = "";
+
       renderAll();
       buildMessage();
       toast("🧹 Limpio.");
@@ -876,8 +1088,8 @@
 
     trackingInput.addEventListener("input", buildMessage);
 
-    btnShareWhatsapp.addEventListener("click", () => shareWhatsappWithFilesIfPossible(false));
-    btnShareWhatsappOne.addEventListener("click", () => shareWhatsappWithFilesIfPossible(true));
+    btnShareWhatsapp.addEventListener("click", shareCurrent);
+    btnShareWhatsappOne.addEventListener("click", archiveAndShareCurrent);
     btnOpenWhatsappText.addEventListener("click", openWhatsappTextOnly);
     btnDownloadZip.addEventListener("click", downloadZip);
 
