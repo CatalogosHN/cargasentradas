@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Registro de Cargas - Escaneo + Fotos</title>
+
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --card:#121a26;
+      --muted:#9fb0c3;
+      --text:#e9f1ff;
+      --line:#1f2b3b;
+      --btn:#2b7cff;
+      --btn2:#1a2433;
+      --danger:#ff4d4d;
+      --ok:#19c37d;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:linear-gradient(180deg,#070a10 0%, #0b0f17 45%, #070a10 100%);
+      color:var(--text);
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      background:rgba(11,15,23,.85);
+      backdrop-filter: blur(8px);
+      border-bottom:1px solid var(--line);
+      padding:14px 16px;
+      display:flex; justify-content:space-between; gap:12px; align-items:center;
+    }
+    h1{margin:0;font-size:18px}
+    .sub{margin:2px 0 0;color:var(--muted);font-size:12px}
+    .container{max-width:1100px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+    .card{
+      background:rgba(18,26,38,.9);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    h2{margin:0 0 10px;font-size:16px}
+    h3{margin:8px 0 8px;font-size:14px;color:#d7e6ff}
+    .grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+    @media (max-width:900px){ .grid2{grid-template-columns:1fr} }
+    .lbl{display:block;color:var(--muted);font-size:12px;margin:6px 0}
+    .input,.textarea{
+      width:100%;
+      border:1px solid var(--line);
+      background:#0b1220;
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      outline:none;
+    }
+    .textarea{resize:vertical}
+    .row{display:flex;gap:10px;align-items:center}
+    .wrap{flex-wrap:wrap}
+    .mt{margin-top:10px}
+    .btn{
+      border:0;background:var(--btn);color:white;
+      padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:600;
+    }
+    .btn.ghost{background:var(--btn2);border:1px solid var(--line);color:var(--text)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:12px;color:var(--muted);
+      border:1px solid var(--line);background:#0b1220;
+      padding:6px 10px;border-radius:999px;
+    }
+    .cameraWrap{display:flex;flex-direction:column;gap:10px}
+    .cameraHeader{display:flex;flex-direction:column;gap:8px}
+    .videoBox{
+      position:relative;width:100%;aspect-ratio:16/9;
+      border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000;
+    }
+    video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+    .roi{
+      position:absolute;left:12%;top:32%;width:76%;height:28%;
+      border:2px dashed rgba(233,241,255,.75);
+      border-radius:14px;
+      box-shadow: 0 0 0 999px rgba(0,0,0,.15);
+      display:flex;align-items:flex-end;justify-content:center;
+      pointer-events:none;
+    }
+    .roiHint{
+      font-size:12px;color:rgba(233,241,255,.9);
+      background:rgba(0,0,0,.55);
+      padding:6px 10px;border-radius:999px;margin-bottom:8px;
+    }
+    .small{color:var(--muted);font-size:12px;line-height:1.35}
+    .fileBtn{position:relative;overflow:hidden;display:inline-flex;align-items:center}
+    .fileBtn input{position:absolute;left:-9999px}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+    .thumb{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1220}
+    .thumb img{width:100%;height:92px;object-fit:cover;display:block}
+    .thumb .x{
+      position:absolute;top:6px;right:6px;border:0;width:28px;height:28px;
+      border-radius:10px;background:rgba(0,0,0,.55);color:white;cursor:pointer;
+    }
+    .list{display:flex;flex-direction:column;gap:10px}
+    .item{border:1px solid var(--line);background:#0b1220;border-radius:14px;padding:10px}
+    .itemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+    .itemTitle{font-weight:700}
+    .itemMeta{color:var(--muted);font-size:12px;margin-top:4px}
+    .itemBtns{display:flex;gap:8px}
+    .btnMini{
+      border:1px solid var(--line);background:#121a26;color:var(--text);
+      padding:8px 10px;border-radius:10px;cursor:pointer;font-size:12px
+    }
+    .btnMini.danger{border-color:rgba(255,77,77,.55); color:#ffd5d5}
+    .totals{
+      margin-top:10px;border-top:1px solid var(--line);padding-top:10px;
+      color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap
+    }
+    .k{color:#cfe0ff}
+    .progress{
+      border:1px solid var(--line);background:#0b1220;border-radius:14px;
+      padding:10px;display:flex;gap:10px;align-items:center
+    }
+    .bar{flex:1;height:10px;border-radius:999px;background:#101a2a;overflow:hidden;border:1px solid var(--line)}
+    .fill{height:100%;width:0%;background:var(--ok)}
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div>
+      <h1>📦 Registro de Cargas</h1>
+      <p class="sub">Escanea (OCR / QR / barcode), agrega productos y comparte por WhatsApp.</p>
+    </div>
+    <button id="btnReset" class="btn ghost" title="Borrar todo">🧹 Limpiar</button>
+  </header>
+
+  <main class="container">
+
+    <section class="card">
+      <h2>1) Tracking / Código</h2>
+
+      <div class="grid2">
+        <div class="cameraWrap">
+          <div class="cameraHeader">
+            <span class="badge" id="camStatus">Cámara: apagada</span>
+            <div class="row wrap">
+              <button id="btnStartCam" class="btn">📷 Iniciar cámara</button>
+              <button id="btnStopCam" class="btn ghost">⛔ Detener</button>
+              <button id="btnSwitchCam" class="btn ghost">🔄 Cambiar</button>
+              <button id="btnTorch" class="btn ghost" disabled>🔦 Flash</button>
+            </div>
+          </div>
+
+          <div class="videoBox" id="videoBox">
+            <video id="video" playsinline muted></video>
+            <div class="roi" id="roi"><div class="roiHint">Pon el número/letras aquí</div></div>
+          </div>
+
+          <div class="row wrap">
+            <button id="btnOcrScan" class="btn">🔎 Escanear TEXTO (OCR)</button>
+            <button id="btnCodeScan" class="btn ghost">📡 Escanear CÓDIGO (QR/Barcode)</button>
+            <button id="btnCaptureLabel" class="btn ghost">🧾 Foto etiqueta</button>
+          </div>
+
+          <div class="small">
+            Importante: cámara funciona en <b>HTTPS (GitHub Pages)</b> o <b>localhost</b>. En <b>file://</b> suele fallar.
+          </div>
+
+          <div class="progress" id="ocrProgress" hidden>
+            <div class="bar"><div class="fill" id="ocrFill"></div></div>
+            <div class="label" id="ocrLabel">OCR…</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="lbl">Tracking detectado / editable</label>
+          <input id="trackingInput" class="input" placeholder="Ej: 4203316660949402108106245672088267" />
+
+          <div class="row wrap mt">
+            <label class="fileBtn btn ghost">
+              🖼️ Subir foto etiqueta
+              <input id="labelFile" type="file" accept="image/*" />
+            </label>
+            <button id="btnOcrFromFile" class="btn ghost">🔎 OCR desde foto</button>
+          </div>
+
+          <div class="mt">
+            <label class="lbl">Texto OCR crudo (por si necesitas corregir)</label>
+            <textarea id="ocrRaw" class="textarea" rows="5" placeholder="Aquí verás lo que leyó el OCR…"></textarea>
+          </div>
+
+          <div class="mt">
+            <h3>Fotos de etiqueta</h3>
+            <div id="labelGallery" class="gallery"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2) Productos</h2>
+
+      <div class="grid2">
+        <div>
+          <label class="lbl">Producto</label>
+          <input id="productName" class="input" placeholder="Ej: AirPods Pro 2, Cargador 20W, etc." />
+
+          <label class="lbl mt">Unidades</label>
+          <input id="productQty" class="input" type="number" min="1" step="1" value="1" />
+
+          <div class="row wrap mt">
+            <button id="btnCaptureProductPhoto" class="btn ghost">📸 Foto producto</button>
+
+            <label class="fileBtn btn ghost">
+              🖼️ Subir fotos
+              <input id="productFiles" type="file" accept="image/*" multiple />
+            </label>
+
+            <button id="btnAddProduct" class="btn">➕ Guardar producto</button>
+          </div>
+
+          <div class="mt">
+            <h3>Fotos del producto (actual)</h3>
+            <div id="currentProductGallery" class="gallery"></div>
+          </div>
+
+          <div class="small mt">
+            Puedes agregar <b>varias fotos</b> antes de “Guardar producto”.
+          </div>
+        </div>
+
+        <div>
+          <h3>Lista</h3>
+          <div id="productList" class="list"></div>
+          <div class="totals">
+            <div><span class="k">Total productos:</span> <span id="totalProducts">0</span></div>
+            <div><span class="k">Total unidades:</span> <span id="totalUnits">0</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3) Compartir por WhatsApp</h2>
+
+      <label class="lbl">Mensaje (se genera automático, pero lo puedes editar)</label>
+      <textarea id="messageBox" class="textarea" rows="10"></textarea>
+
+      <div class="row wrap mt">
+        <button id="btnShareWhatsapp" class="btn">✅ Compartir (con fotos si se puede)</button>
+        <button id="btnOpenWhatsappText" class="btn ghost">💬 Abrir WhatsApp (solo texto)</button>
+        <button id="btnDownloadZip" class="btn ghost">⬇️ Descargar paquete .zip</button>
+      </div>
+
+      <div class="small mt" id="shareHint"></div>
+    </section>
+
+  </main>
+
+  <!-- Librerías -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.4/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const video = el("video");
+    const videoBox = el("videoBox");
+    const roi = el("roi");
+
+    const camStatus = el("camStatus");
+    const btnStartCam = el("btnStartCam");
+    const btnStopCam = el("btnStopCam");
+    const btnSwitchCam = el("btnSwitchCam");
+    const btnTorch = el("btnTorch");
+
+    const btnOcrScan = el("btnOcrScan");
+    const btnCodeScan = el("btnCodeScan");
+    const btnCaptureLabel = el("btnCaptureLabel");
+
+    const trackingInput = el("trackingInput");
+    const ocrRaw = el("ocrRaw");
+
+    const labelFile = el("labelFile");
+    const btnOcrFromFile = el("btnOcrFromFile");
+    const labelGallery = el("labelGallery");
+
+    const productName = el("productName");
+    const productQty = el("productQty");
+    const btnCaptureProductPhoto = el("btnCaptureProductPhoto");
+    const productFiles = el("productFiles");
+    const btnAddProduct = el("btnAddProduct");
+    const currentProductGallery = el("currentProductGallery");
+    const productList = el("productList");
+    const totalProducts = el("totalProducts");
+    const totalUnits = el("totalUnits");
+
+    const messageBox = el("messageBox");
+    const btnShareWhatsapp = el("btnShareWhatsapp");
+    const btnOpenWhatsappText = el("btnOpenWhatsappText");
+    const btnDownloadZip = el("btnDownloadZip");
+    const btnReset = el("btnReset");
+
+    const ocrProgress = el("ocrProgress");
+    const ocrFill = el("ocrFill");
+    const ocrLabel = el("ocrLabel");
+    const shareHint = el("shareHint");
+
+    let stream = null;
+    let facingMode = "environment";
+    let torchOn = false;
+
+    let ocrWorker = null;
+    let codeReader = null;
+    let codeScanActive = false;
+
+    const state = {
+      labelPhotos: [],
+      currentProductPhotos: [],
+      products: []
+    };
+
+    function setCamStatus(on, msg) {
+      camStatus.textContent = `Cámara: ${on ? "encendida" : "apagada"}${msg ? " • " + msg : ""}`;
+      camStatus.style.color = on ? "#cfe0ff" : "#9fb0c3";
+    }
+
+    function showProgress(show, pct = 0, text = "OCR…") {
+      ocrProgress.hidden = !show;
+      ocrFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      ocrLabel.textContent = text;
+    }
+
+    function toast(text) {
+      shareHint.textContent = text;
+      setTimeout(() => {
+        if (shareHint.textContent === text) shareHint.textContent = "";
+      }, 5000);
+    }
+
+    async function startCamera() {
+      try {
+        stopCamera();
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          }
+        };
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = stream;
+        await video.play();
+        setCamStatus(true, facingMode === "environment" ? "trasera" : "frontal");
+
+        const track = stream.getVideoTracks()[0];
+        const caps = track.getCapabilities ? track.getCapabilities() : {};
+        btnTorch.disabled = !caps.torch;
+
+        torchOn = false;
+        btnTorch.textContent = "🔦 Flash";
+      } catch (err) {
+        console.error(err);
+        setCamStatus(false, "permiso denegado o no disponible");
+        alert(
+          "No se pudo abrir la cámara.\n\n" +
+          "Asegúrate de:\n" +
+          "1) Abrirlo en HTTPS (GitHub Pages)\n" +
+          "2) Aceptar permisos de cámara\n" +
+          "3) Usar Chrome/Edge\n"
+        );
+      }
+    }
+
+    function stopCamera() {
+      if (codeScanActive) stopCodeScan();
+      if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+        stream = null;
+      }
+      if (video.srcObject) video.srcObject = null;
+      setCamStatus(false);
+      btnTorch.disabled = true;
+      torchOn = false;
+    }
+
+    async function switchCamera() {
+      facingMode = (facingMode === "environment") ? "user" : "environment";
+      await startCamera();
+    }
+
+    async function toggleTorch() {
+      if (!stream) return;
+      const track = stream.getVideoTracks()[0];
+      const caps = track.getCapabilities ? track.getCapabilities() : {};
+      if (!caps.torch) return;
+      torchOn = !torchOn;
+      try {
+        await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+        btnTorch.textContent = torchOn ? "🔦 Flash ON" : "🔦 Flash";
+      } catch (e) {
+        console.warn(e);
+        torchOn = false;
+        btnTorch.textContent = "🔦 Flash";
+      }
+    }
+
+    function captureToCanvas() {
+      if (!video.videoWidth || !video.videoHeight) return null;
+      const c = document.createElement("canvas");
+      c.width = video.videoWidth;
+      c.height = video.videoHeight;
+      c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    function cropCanvasToROI(fullCanvas) {
+      const vw = fullCanvas.width;
+      const vh = fullCanvas.height;
+
+      const boxRect = videoBox.getBoundingClientRect();
+      const roiRect = roi.getBoundingClientRect();
+
+      const dw = boxRect.width;
+      const dh = boxRect.height;
+
+      const scale = Math.min(dw / vw, dh / vh);
+      const renderedW = vw * scale;
+      const renderedH = vh * scale;
+      const offsetX = (dw - renderedW) / 2;
+      const offsetY = (dh - renderedH) / 2;
+
+      const roiLeft = roiRect.left - boxRect.left;
+      const roiTop = roiRect.top - boxRect.top;
+      const roiW = roiRect.width;
+      const roiH = roiRect.height;
+
+      let sx = (roiLeft - offsetX) / scale;
+      let sy = (roiTop - offsetY) / scale;
+      let sw = roiW / scale;
+      let sh = roiH / scale;
+
+      sx = Math.max(0, Math.min(vw - 1, sx));
+      sy = Math.max(0, Math.min(vh - 1, sy));
+      sw = Math.max(10, Math.min(vw - sx, sw));
+      sh = Math.max(10, Math.min(vh - sy, sh));
+
+      const c = document.createElement("canvas");
+      c.width = Math.round(sw);
+      c.height = Math.round(sh);
+      c.getContext("2d").drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    function canvasToBlob(canvas, type = "image/jpeg", quality = 0.9) {
+      return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+    }
+
+    async function ensureOcrWorker() {
+      if (ocrWorker) return ocrWorker;
+
+      ocrWorker = await Tesseract.createWorker("eng", 1, {
+        logger: (m) => {
+          if (m.status === "recognizing text") {
+            const pct = Math.round((m.progress || 0) * 100);
+            showProgress(true, pct, `OCR… ${pct}%`);
+          }
+        }
+      });
+
+      await ocrWorker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+        preserve_interword_spaces: "1"
+      });
+
+      return ocrWorker;
+    }
+
+    function pickBestToken(text) {
+      const cleaned = (text || "").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
+      const tokens = cleaned.match(/[A-Za-z0-9]{6,}/g) || [];
+      tokens.sort((a, b) => b.length - a.length);
+      return { cleaned, tokens, best: tokens[0] || "" };
+    }
+
+    async function ocrFromCanvas(canvas) {
+      showProgress(true, 1, "OCR… iniciando");
+      const worker = await ensureOcrWorker();
+      const { data } = await worker.recognize(canvas);
+      showProgress(false);
+      return data.text || "";
+    }
+
+    async function scanOcrFromCamera() {
+      if (!stream) {
+        await startCamera();
+        if (!stream) return;
+      }
+
+      const full = captureToCanvas();
+      if (!full) return;
+      const cropped = cropCanvasToROI(full);
+
+      try {
+        const rawText = await ocrFromCanvas(cropped);
+        ocrRaw.value = rawText;
+
+        const { best } = pickBestToken(rawText);
+        if (best) {
+          trackingInput.value = best;
+          toast("✅ Tracking detectado (puedes corregirlo).");
+        } else {
+          toast("⚠️ No detecté token claro. Acerca el número al cuadro y reintenta.");
+        }
+        buildMessage();
+      } catch (e) {
+        console.error(e);
+        showProgress(false);
+        toast("❌ OCR falló. Más luz, sin movimiento y enfoca dentro del cuadro.");
+      }
+    }
+
+    async function ocrFromUploadedFile() {
+      const file = labelFile.files && labelFile.files[0];
+      if (!file) return toast("Selecciona una imagen primero.");
+
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      await img.decode().catch(() => {});
+
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext("2d").drawImage(img, 0, 0);
+
+      try {
+        const rawText = await ocrFromCanvas(c);
+        ocrRaw.value = rawText;
+        const { best } = pickBestToken(rawText);
+        if (best) trackingInput.value = best;
+        toast(best ? "✅ OCR listo desde la foto." : "⚠️ OCR sin token claro. Revisa el texto crudo.");
+        buildMessage();
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    async function startCodeScan() {
+      if (!stream) {
+        await startCamera();
+        if (!stream) return;
+      }
+      codeScanActive = true;
+      btnCodeScan.textContent = "⏹️ Detener código";
+      toast("Escaneando QR/barcode… (si no hay código, usa OCR)");
+
+      if (!codeReader) codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+
+      codeReader.decodeFromVideoElementContinuously(video, (result) => {
+        if (result) {
+          const text = result.getText ? result.getText() : String(result.text || "");
+          trackingInput.value = text;
+          ocrRaw.value = "";
+          buildMessage();
+          navigator.vibrate?.(100);
+          toast("✅ Código detectado.");
+          stopCodeScan();
+        }
+      });
+    }
+
+    function stopCodeScan() {
+      codeScanActive = false;
+      btnCodeScan.textContent = "📡 Escanear CÓDIGO (QR/Barcode)";
+      try { codeReader?.reset(); } catch {}
+    }
+
+    function renderGallery(arr, galleryEl, onRemove) {
+      galleryEl.innerHTML = "";
+      arr.forEach((p, idx) => {
+        const d = document.createElement("div");
+        d.className = "thumb";
+        const img = document.createElement("img");
+        img.src = p.url;
+        const x = document.createElement("button");
+        x.className = "x";
+        x.textContent = "✕";
+        x.onclick = () => onRemove(idx);
+        d.appendChild(img);
+        d.appendChild(x);
+        galleryEl.appendChild(d);
+      });
+    }
+
+    function addPhotoToGallery(arr, blob, name, galleryEl) {
+      const url = URL.createObjectURL(blob);
+      arr.push({ blob, url, name });
+      renderAll();
+    }
+
+    async function captureLabelPhoto() {
+      if (!stream) { await startCamera(); if (!stream) return; }
+      const c = captureToCanvas();
+      if (!c) return;
+      const blob = await canvasToBlob(c, "image/jpeg", 0.9);
+      addPhotoToGallery(state.labelPhotos, blob, `etiqueta-${Date.now()}.jpg`, labelGallery);
+      buildMessage();
+    }
+
+    async function captureProductPhoto() {
+      if (!stream) { await startCamera(); if (!stream) return; }
+      const c = captureToCanvas();
+      if (!c) return;
+      const blob = await canvasToBlob(c, "image/jpeg", 0.9);
+      addPhotoToGallery(state.currentProductPhotos, blob, `producto-${Date.now()}.jpg`, currentProductGallery);
+    }
+
+    function addProductFiles(files) {
+      [...files].forEach((file) => {
+        const blob = file.slice(0, file.size, file.type || "image/jpeg");
+        addPhotoToGallery(state.currentProductPhotos, blob, file.name || `producto-${Date.now()}.jpg`, currentProductGallery);
+      });
+    }
+
+    function addProduct() {
+      const name = (productName.value || "").trim();
+      const qty = parseInt(productQty.value || "0", 10);
+      if (!name) return toast("Escribe el nombre del producto.");
+      if (!qty || qty < 1) return toast("Unidades debe ser 1 o más.");
+
+      const photos = state.currentProductPhotos.map(p => ({...p}));
+      state.products.push({ name, qty, photos });
+
+      productName.value = "";
+      productQty.value = "1";
+      state.currentProductPhotos = [];
+      renderAll();
+      buildMessage();
+      toast("✅ Producto guardado.");
+    }
+
+    function removeProduct(idx) {
+      const p = state.products[idx];
+      p.photos.forEach(ph => URL.revokeObjectURL(ph.url));
+      state.products.splice(idx, 1);
+      renderAll();
+      buildMessage();
+    }
+
+    function renderProducts() {
+      productList.innerHTML = "";
+      state.products.forEach((p, idx) => {
+        const box = document.createElement("div");
+        box.className = "item";
+
+        const top = document.createElement("div");
+        top.className = "itemTop";
+
+        const left = document.createElement("div");
+        left.innerHTML = `
+          <div class="itemTitle">${p.qty} x ${escapeHtml(p.name)}</div>
+          <div class="itemMeta">Fotos: ${p.photos.length}</div>
+        `;
+
+        const right = document.createElement("div");
+        right.className = "itemBtns";
+
+        const del = document.createElement("button");
+        del.className = "btnMini danger";
+        del.textContent = "Eliminar";
+        del.onclick = () => removeProduct(idx);
+
+        right.appendChild(del);
+        top.appendChild(left);
+        top.appendChild(right);
+
+        const gal = document.createElement("div");
+        gal.className = "gallery";
+        p.photos.slice(0, 6).forEach((ph) => {
+          const t = document.createElement("div");
+          t.className = "thumb";
+          const img = document.createElement("img");
+          img.src = ph.url;
+          t.appendChild(img);
+          gal.appendChild(t);
+        });
+
+        box.appendChild(top);
+        if (p.photos.length) box.appendChild(gal);
+        productList.appendChild(box);
+      });
+
+      totalProducts.textContent = String(state.products.length);
+      totalUnits.textContent = String(state.products.reduce((a, p) => a + (p.qty || 0), 0));
+    }
+
+    function renderAll() {
+      renderGallery(state.labelPhotos, labelGallery, (idx) => {
+        URL.revokeObjectURL(state.labelPhotos[idx].url);
+        state.labelPhotos.splice(idx, 1);
+        renderAll();
+        buildMessage();
+      });
+
+      renderGallery(state.currentProductPhotos, currentProductGallery, (idx) => {
+        URL.revokeObjectURL(state.currentProductPhotos[idx].url);
+        state.currentProductPhotos.splice(idx, 1);
+        renderAll();
+      });
+
+      renderProducts();
+    }
+
+    function buildMessage() {
+      const tracking = (trackingInput.value || "").trim();
+      const dateStr = new Date().toLocaleString();
+
+      let msg = `📦 Registro de carga\n🕒 ${dateStr}\n\n`;
+      msg += `🔎 Tracking: ${tracking || "(pendiente)"}\n`;
+      msg += `🧾 Fotos etiqueta: ${state.labelPhotos.length}\n\n`;
+
+      if (state.products.length) {
+        msg += `🧺 Productos:\n`;
+        state.products.forEach((p, i) => {
+          msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${p.photos.length})\n`;
+        });
+        msg += `\n📌 Total unidades: ${state.products.reduce((a, p) => a + p.qty, 0)}\n`;
+      } else {
+        msg += `🧺 Productos: (pendiente)\n`;
+      }
+
+      msg += `\n—\nEnviado desde mi registro web`;
+      messageBox.value = msg;
+      return msg;
+    }
+
+    function waUrlFromText(text) {
+      return `https://wa.me/?text=${encodeURIComponent(text)}`;
+    }
+
+    function blobsToFiles() {
+      const files = [];
+      state.labelPhotos.forEach((p, i) => {
+        files.push(new File([p.blob], p.name || `etiqueta-${i+1}.jpg`, { type: p.blob.type || "image/jpeg" }));
+      });
+      state.products.forEach((prod, pi) => {
+        prod.photos.forEach((ph, fi) => {
+          const safeName = (prod.name || `producto-${pi+1}`).replace(/[^\w\-]+/g, "_");
+          const ext = (ph.blob.type || "").includes("png") ? "png" : "jpg";
+          files.push(new File([ph.blob], `${safeName}-${pi+1}-${fi+1}.${ext}`, { type: ph.blob.type || "image/jpeg" }));
+        });
+      });
+      return files;
+    }
+
+    async function shareWhatsappWithFilesIfPossible() {
+      const text = messageBox.value || buildMessage();
+      const files = blobsToFiles();
+      const canShareFiles = !!navigator.canShare && files.length > 0 && navigator.canShare({ files });
+
+      if (navigator.share && (canShareFiles || files.length === 0)) {
+        try {
+          await navigator.share({
+            title: "Registro de carga",
+            text,
+            files: canShareFiles ? files : undefined
+          });
+          toast("✅ Compartido.");
+          return;
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
+      window.open(waUrlFromText(text), "_blank");
+      toast("💬 Abrí WhatsApp con el texto. Si no adjuntó fotos, usa ZIP para mandarlas rápido.");
+    }
+
+    function openWhatsappTextOnly() {
+      const text = messageBox.value || buildMessage();
+      window.open(waUrlFromText(text), "_blank");
+    }
+
+    async function downloadZip() {
+      const zip = new JSZip();
+      const text = messageBox.value || buildMessage();
+      zip.file("INFO.txt", text);
+
+      const labelFolder = zip.folder("etiqueta");
+      state.labelPhotos.forEach((p, i) => labelFolder.file(p.name || `etiqueta-${i+1}.jpg`, p.blob));
+
+      const prodFolder = zip.folder("productos");
+      state.products.forEach((prod, pi) => {
+        const safe = (prod.name || `producto-${pi+1}`).replace(/[^\w\-]+/g, "_");
+        const f = prodFolder.folder(`${pi+1}-${safe}`);
+        f.file("detalle.txt", `${prod.qty} x ${prod.name}\nFotos: ${prod.photos.length}`);
+        prod.photos.forEach((ph, fi) => {
+          const ext = (ph.blob.type || "").includes("png") ? "png" : "jpg";
+          f.file(`foto-${fi+1}.${ext}`, ph.blob);
+        });
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `registro-carga-${Date.now()}.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1500);
+      toast("⬇️ ZIP descargado.");
+    }
+
+    function resetAll() {
+      stopCamera();
+      state.labelPhotos.forEach(p => URL.revokeObjectURL(p.url));
+      state.currentProductPhotos.forEach(p => URL.revokeObjectURL(p.url));
+      state.products.forEach(pr => pr.photos.forEach(ph => URL.revokeObjectURL(ph.url)));
+
+      state.labelPhotos = [];
+      state.currentProductPhotos = [];
+      state.products = [];
+      trackingInput.value = "";
+      ocrRaw.value = "";
+      productName.value = "";
+      productQty.value = "1";
+      messageBox.value = "";
+      renderAll();
+      buildMessage();
+      toast("🧹 Limpio.");
+    }
+
+    function escapeHtml(s) {
+      return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+                      .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    btnStartCam.addEventListener("click", startCamera);
+    btnStopCam.addEventListener("click", stopCamera);
+    btnSwitchCam.addEventListener("click", switchCamera);
+    btnTorch.addEventListener("click", toggleTorch);
+
+    btnOcrScan.addEventListener("click", scanOcrFromCamera);
+    btnCodeScan.addEventListener("click", async () => codeScanActive ? stopCodeScan() : await startCodeScan());
+    btnCaptureLabel.addEventListener("click", captureLabelPhoto);
+    btnOcrFromFile.addEventListener("click", ocrFromUploadedFile);
+
+    productFiles.addEventListener("change", (e) => {
+      if (e.target.files?.length) addProductFiles(e.target.files);
+      e.target.value = "";
+    });
+
+    btnCaptureProductPhoto.addEventListener("click", captureProductPhoto);
+    btnAddProduct.addEventListener("click", addProduct);
+
+    trackingInput.addEventListener("input", buildMessage);
+
+    btnShareWhatsapp.addEventListener("click", shareWhatsappWithFilesIfPossible);
+    btnOpenWhatsappText.addEventListener("click", openWhatsappTextOnly);
+    btnDownloadZip.addEventListener("click", downloadZip);
+
+    btnReset.addEventListener("click", resetAll);
+
+    renderAll();
+    buildMessage();
+    setCamStatus(false);
+
+    if (!window.isSecureContext) {
+      toast("⚠️ Estás en file:// (no seguro). Sube a GitHub Pages (HTTPS) o usa localhost para la cámara.");
+    }
+  </script>
+</body>
+</html>
