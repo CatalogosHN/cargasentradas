@@ -16,6 +16,7 @@
       --btn2:#1a2433;
       --danger:#ff4d4d;
       --ok:#19c37d;
+      --warn:#ffd166;
     }
     *{box-sizing:border-box}
     body{
@@ -45,9 +46,10 @@
     h2{margin:0 0 10px;font-size:16px}
     h3{margin:8px 0 8px;font-size:14px;color:#d7e6ff}
     .grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
-    @media (max-width:900px){ .grid2{grid-template-columns:1fr} }
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    @media (max-width:900px){ .grid2,.grid3{grid-template-columns:1fr} }
     .lbl{display:block;color:var(--muted);font-size:12px;margin:6px 0}
-    .input,.textarea{
+    .input,.textarea,.select{
       width:100%;
       border:1px solid var(--line);
       background:#0b1220;
@@ -65,6 +67,7 @@
       padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:600;
     }
     .btn.ghost{background:var(--btn2);border:1px solid var(--line);color:var(--text)}
+    .btn.danger{background:rgba(255,77,77,.13);border:1px solid rgba(255,77,77,.55);color:#ffd5d5}
     .btn:disabled{opacity:.6;cursor:not-allowed}
     .badge{
       display:inline-flex;align-items:center;gap:6px;
@@ -72,6 +75,8 @@
       border:1px solid var(--line);background:#0b1220;
       padding:6px 10px;border-radius:999px;
     }
+    .badge.ok{color:#bfffe3;border-color:rgba(25,195,125,.35)}
+    .badge.warn{color:#ffe8a6;border-color:rgba(255,209,102,.35)}
     .cameraWrap{display:flex;flex-direction:column;gap:10px}
     .cameraHeader{display:flex;flex-direction:column;gap:8px}
     .videoBox{
@@ -95,7 +100,7 @@
     .small{color:var(--muted);font-size:12px;line-height:1.35}
     .fileBtn{position:relative;overflow:hidden;display:inline-flex;align-items:center}
     .fileBtn input{position:absolute;left:-9999px}
-    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+    .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px;margin-top:8px}
     .thumb{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0b1220}
     .thumb img{width:100%;height:92px;object-fit:cover;display:block}
     .thumb .x{
@@ -107,11 +112,12 @@
     .itemTop{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
     .itemTitle{font-weight:700}
     .itemMeta{color:var(--muted);font-size:12px;margin-top:4px}
-    .itemBtns{display:flex;gap:8px}
+    .itemBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .btnMini{
       border:1px solid var(--line);background:#121a26;color:var(--text);
       padding:8px 10px;border-radius:10px;cursor:pointer;font-size:12px
     }
+    .btnMini.primary{background:rgba(43,124,255,.18);border-color:rgba(43,124,255,.55)}
     .btnMini.danger{border-color:rgba(255,77,77,.55); color:#ffd5d5}
     .totals{
       margin-top:10px;border-top:1px solid var(--line);padding-top:10px;
@@ -124,6 +130,14 @@
     }
     .bar{flex:1;height:10px;border-radius:999px;background:#101a2a;overflow:hidden;border:1px solid var(--line)}
     .fill{height:100%;width:0%;background:var(--ok)}
+    .saveLine{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+    @media (max-width:650px){
+      .topbar{align-items:flex-start;flex-direction:column}
+      .saveLine{justify-content:flex-start}
+      .itemTop{flex-direction:column}
+      .itemBtns{justify-content:flex-start}
+      .btn,.btnMini{width:auto}
+    }
   </style>
 </head>
 
@@ -131,15 +145,56 @@
   <header class="topbar">
     <div>
       <h1>📦 Registro de Cargas</h1>
-      <p class="sub">Escanea (OCR / QR / barcode), agrega productos y comparte por WhatsApp.</p>
+      <p class="sub">Escanea (OCR / QR / barcode), agrega productos, guarda varios trackings y comparte cada uno con sus fotos.</p>
     </div>
-    <button id="btnReset" class="btn ghost" title="Borrar todo">🧹 Limpiar</button>
+    <div class="saveLine">
+      <span id="saveStatus" class="badge">Guardado: iniciando…</span>
+      <button id="btnReset" class="btn danger" title="Borrar todo">🧹 Borrar todo</button>
+    </div>
   </header>
 
   <main class="container">
 
     <section class="card">
-      <h2>1) Tracking / Código</h2>
+      <h2>0) Datos generales de la carga</h2>
+      <div class="grid3">
+        <div>
+          <label class="lbl">Tipo de carga</label>
+          <select id="shipmentType" class="select">
+            <option value="maritima">Carga marítima ⛴️</option>
+            <option value="aerea">Carga aérea ✈️</option>
+          </select>
+        </div>
+        <div>
+          <label class="lbl">Despacho</label>
+          <input id="dispatchDate" class="input" placeholder="Ej: 22 abril 2026" />
+        </div>
+        <div>
+          <label class="lbl">Recibida</label>
+          <input id="receivedDate" class="input" placeholder="Ej: 12 mayo 2026" />
+        </div>
+        <div>
+          <label class="lbl">Peso</label>
+          <input id="weightLbs" class="input" placeholder="Ej: 191 lbs" />
+        </div>
+        <div>
+          <label class="lbl">Volumen</label>
+          <input id="volumeLbs" class="input" placeholder="Ej: 190.30 lbs" />
+        </div>
+        <div>
+          <label class="lbl">Pies / ft³</label>
+          <input id="feetFt3" class="input" placeholder="Ej: 18 ft³" />
+        </div>
+        <div>
+          <label class="lbl">Costo</label>
+          <input id="costLps" class="input" placeholder="Ej: 8,257.15 lps" />
+        </div>
+      </div>
+      <div class="small mt">Estos datos se usan solo para el resumen final de texto. Todo se guarda automáticamente en este navegador cada 2 segundos.</div>
+    </section>
+
+    <section class="card">
+      <h2>1) Tracking / Código actual</h2>
 
       <div class="grid2">
         <div class="cameraWrap">
@@ -176,7 +231,7 @@
 
         <div>
           <label class="lbl">Tracking detectado / editable</label>
-          <input id="trackingInput" class="input" placeholder="Ej: 4203316660949402108106245672088267" />
+          <input id="trackingInput" class="input" placeholder="Ej: 1Z3Y18820305554823" />
 
           <div class="row wrap mt">
             <label class="fileBtn btn ghost">
@@ -200,12 +255,12 @@
     </section>
 
     <section class="card">
-      <h2>2) Productos</h2>
+      <h2>2) Productos del tracking actual</h2>
 
       <div class="grid2">
         <div>
           <label class="lbl">Producto</label>
-          <input id="productName" class="input" placeholder="Ej: AirPods Pro 2, Cargador 20W, etc." />
+          <input id="productName" class="input" placeholder="Ej: Kit camaras Nubia Encargo" />
 
           <label class="lbl mt">Unidades</label>
           <input id="productQty" class="input" type="number" min="1" step="1" value="1" />
@@ -242,33 +297,46 @@
       </div>
     </section>
 
+    <section class="card">
+      <h2>3) Guardar / enviar tracking actual</h2>
+
+      <label class="lbl">Mensaje individual de este tracking</label>
+      <textarea id="messageBox" class="textarea" rows="10"></textarea>
+
+      <div class="row wrap mt">
+        <button id="btnSaveCurrentTracking" class="btn">➕ Agregar tracking al resumen</button>
+        <button id="btnShareWhatsapp" class="btn ghost">📤 Enviar actual sin guardar</button>
+        <button id="btnShareWhatsappOne" class="btn ghost">💾 Agregar y enviar</button>
+        <button id="btnOpenWhatsappText" class="btn ghost">💬 WhatsApp solo texto</button>
+        <button id="btnDownloadZip" class="btn ghost">⬇️ ZIP actual</button>
+      </div>
+
+      <div class="small mt" id="shareHint"></div>
+    </section>
 
     <section class="card">
-      <h2>📚 Trackings guardados</h2>
-      <div class="small">Aquí quedan guardados para que el total no se pierda y puedas compartir 1 por 1.</div>
+      <h2>📚 Trackings agregados a esta carga</h2>
+      <div class="small">Cada tracking guardado tiene su propio botón de enviar. Ese botón copia el texto al portapapeles y abre el menú para compartir sus fotos.</div>
 
       <div id="loadsList" class="list mt"></div>
 
       <div class="totals">
-        <div><span class="k">Trackings:</span> <span id="loadsCount">0</span></div>
-        <div><span class="k">Tip:</span> usa “📤 Compartir 1 tracking” cuando termines uno.</div>
+        <div><span class="k">Trackings guardados:</span> <span id="loadsCount">0</span></div>
+        <div><span class="k">Fotos:</span> <span id="savedPhotosCount">0</span></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>3) Compartir por WhatsApp</h2>
-
-      <label class="lbl">Mensaje (se genera automático, pero lo puedes editar)</label>
-      <textarea id="messageBox" class="textarea" rows="10"></textarea>
+      <h2>4) Resumen final de la carga</h2>
+      <label class="lbl">Resumen final solo texto</label>
+      <textarea id="finalSummaryBox" class="textarea" rows="14" readonly></textarea>
 
       <div class="row wrap mt">
-        <button id="btnShareWhatsapp" class="btn">✅ Compartir (con fotos si se puede)</button>
-        <button id="btnShareWhatsappOne" class="btn ghost">📤 Compartir 1 tracking</button>
-        <button id="btnOpenWhatsappText" class="btn ghost">💬 Abrir WhatsApp (solo texto)</button>
-        <button id="btnDownloadZip" class="btn ghost">⬇️ Descargar paquete .zip</button>
+        <button id="btnCopyFinalSummary" class="btn">📋 Copiar resumen final</button>
+        <button id="btnOpenWhatsappSummary" class="btn ghost">💬 WhatsApp resumen texto</button>
+        <button id="btnClearAllTrackings" class="btn danger">🧹 Borrar todos los tracking / nueva carga</button>
       </div>
-
-      <div class="small mt" id="shareHint"></div>
+      <div class="small mt">El resumen final toma únicamente los trackings que ya agregaste a la lista.</div>
     </section>
 
   </main>
@@ -317,6 +385,7 @@
     const btnShareWhatsappOne = el("btnShareWhatsappOne");
     const btnOpenWhatsappText = el("btnOpenWhatsappText");
     const btnDownloadZip = el("btnDownloadZip");
+    const btnSaveCurrentTracking = el("btnSaveCurrentTracking");
     const btnReset = el("btnReset");
 
     const ocrProgress = el("ocrProgress");
@@ -326,6 +395,20 @@
 
     const loadsList = el("loadsList");
     const loadsCount = el("loadsCount");
+    const savedPhotosCount = el("savedPhotosCount");
+
+    const shipmentType = el("shipmentType");
+    const dispatchDate = el("dispatchDate");
+    const receivedDate = el("receivedDate");
+    const weightLbs = el("weightLbs");
+    const volumeLbs = el("volumeLbs");
+    const feetFt3 = el("feetFt3");
+    const costLps = el("costLps");
+    const finalSummaryBox = el("finalSummaryBox");
+    const btnCopyFinalSummary = el("btnCopyFinalSummary");
+    const btnOpenWhatsappSummary = el("btnOpenWhatsappSummary");
+    const btnClearAllTrackings = el("btnClearAllTrackings");
+    const saveStatus = el("saveStatus");
 
     let stream = null;
     let facingMode = "environment";
@@ -334,8 +417,24 @@
     let ocrWorker = null;
     let codeReader = null;
     let codeScanActive = false;
+    let lastLabelFileForOcr = null;
+
+    const DB_NAME = "registro-cargas-entradas-db-v3";
+    const DB_STORE = "estado";
+    let dbPromise = null;
+    let dirty = false;
+    let restoreDone = false;
 
     const state = {
+      shipment: {
+        type: "maritima",
+        despacho: "",
+        recibida: "",
+        peso: "",
+        volumen: "",
+        pies: "",
+        costo: ""
+      },
       labelPhotos: [],
       currentProductPhotos: [],
       products: [],
@@ -358,6 +457,16 @@
       setTimeout(() => {
         if (shareHint.textContent === text) shareHint.textContent = "";
       }, 5000);
+    }
+
+    function setSaveStatus(text, mode = "") {
+      saveStatus.textContent = text;
+      saveStatus.className = "badge" + (mode ? " " + mode : "");
+    }
+
+    function markDirty() {
+      dirty = true;
+      if (restoreDone) setSaveStatus("Guardado: cambios pendientes", "warn");
     }
 
     async function startCamera() {
@@ -536,6 +645,7 @@
           toast("⚠️ No detecté token claro. Acerca el número al cuadro y reintenta.");
         }
         buildMessage();
+        markDirty();
       } catch (e) {
         console.error(e);
         showProgress(false);
@@ -544,7 +654,7 @@
     }
 
     async function ocrFromUploadedFile() {
-      const file = labelFile.files && labelFile.files[0];
+      const file = lastLabelFileForOcr || (labelFile.files && labelFile.files[0]);
       if (!file) return toast("Selecciona una imagen primero.");
 
       const img = new Image();
@@ -564,6 +674,7 @@
         if (best) trackingInput.value = best;
         toast(best ? "✅ OCR listo desde la foto." : "⚠️ OCR sin token claro. Revisa el texto crudo.");
         buildMessage();
+        markDirty();
       } finally {
         URL.revokeObjectURL(url);
       }
@@ -586,6 +697,7 @@
           trackingInput.value = text;
           ocrRaw.value = "";
           buildMessage();
+          markDirty();
           navigator.vibrate?.(100);
           toast("✅ Código detectado.");
           stopCodeScan();
@@ -597,6 +709,41 @@
       codeScanActive = false;
       btnCodeScan.textContent = "📡 Escanear CÓDIGO (QR/Barcode)";
       try { codeReader?.reset(); } catch {}
+    }
+
+    async function compressImageBlob(blob, maxSide = 1600, quality = 0.82) {
+      if (!blob || !blob.type || !blob.type.startsWith("image/")) return blob;
+      const img = new Image();
+      const url = URL.createObjectURL(blob);
+      img.src = url;
+      try {
+        await img.decode();
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (!w || !h) return blob;
+        const scale = Math.min(1, maxSide / Math.max(w, h));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(w * scale));
+        c.height = Math.max(1, Math.round(h * scale));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const out = await canvasToBlob(c, "image/jpeg", quality);
+        return out || blob;
+      } catch (e) {
+        console.warn("No se pudo comprimir imagen", e);
+        return blob;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }
+
+    function photoObjectFromBlob(blob, name) {
+      return {
+        blob,
+        url: URL.createObjectURL(blob),
+        name: name || `foto-${Date.now()}.jpg`,
+        type: blob.type || "image/jpeg",
+        createdAt: Date.now()
+      };
     }
 
     function renderGallery(arr, galleryEl, onRemove) {
@@ -616,10 +763,12 @@
       });
     }
 
-    function addPhotoToGallery(arr, blob, name, galleryEl) {
-      const url = URL.createObjectURL(blob);
-      arr.push({ blob, url, name });
+    async function addPhotoToGallery(arr, blob, name) {
+      const compressed = await compressImageBlob(blob);
+      arr.push(photoObjectFromBlob(compressed, name));
       renderAll();
+      buildMessage();
+      markDirty();
     }
 
     async function captureLabelPhoto() {
@@ -627,8 +776,8 @@
       const c = captureToCanvas();
       if (!c) return;
       const blob = await canvasToBlob(c, "image/jpeg", 0.9);
-      addPhotoToGallery(state.labelPhotos, blob, `etiqueta-${Date.now()}.jpg`, labelGallery);
-      buildMessage();
+      await addPhotoToGallery(state.labelPhotos, blob, `etiqueta-${Date.now()}.jpg`);
+      toast("🧾 Foto de etiqueta agregada.");
     }
 
     async function captureProductPhoto() {
@@ -636,39 +785,57 @@
       const c = captureToCanvas();
       if (!c) return;
       const blob = await canvasToBlob(c, "image/jpeg", 0.9);
-      addPhotoToGallery(state.currentProductPhotos, blob, `producto-${Date.now()}.jpg`, currentProductGallery);
+      await addPhotoToGallery(state.currentProductPhotos, blob, `producto-${Date.now()}.jpg`);
+      toast("📸 Foto de producto agregada.");
     }
 
-    function addProductFiles(files) {
-      [...files].forEach((file) => {
+    async function addProductFiles(files) {
+      for (const file of [...files]) {
         const blob = file.slice(0, file.size, file.type || "image/jpeg");
-        addPhotoToGallery(state.currentProductPhotos, blob, file.name || `producto-${Date.now()}.jpg`, currentProductGallery);
-      });
+        await addPhotoToGallery(state.currentProductPhotos, blob, file.name || `producto-${Date.now()}.jpg`);
+      }
     }
 
-    function addProduct() {
+    async function addLabelFile(file) {
+      if (!file) return;
+      lastLabelFileForOcr = file;
+      const blob = file.slice(0, file.size, file.type || "image/jpeg");
+      await addPhotoToGallery(state.labelPhotos, blob, file.name || `etiqueta-${Date.now()}.jpg`);
+      toast("🧾 Foto de etiqueta agregada. Puedes usar OCR desde esa foto.");
+    }
+
+    function addProduct(options = {}) {
       const name = (productName.value || "").trim();
       const qty = parseInt(productQty.value || "0", 10);
-      if (!name) return toast("Escribe el nombre del producto.");
-      if (!qty || qty < 1) return toast("Unidades debe ser 1 o más.");
+      if (!name) {
+        if (!options.silent) toast("Escribe el nombre del producto.");
+        return false;
+      }
+      if (!qty || qty < 1) {
+        if (!options.silent) toast("Unidades debe ser 1 o más.");
+        return false;
+      }
 
       const photos = state.currentProductPhotos.map(p => ({...p}));
-      state.products.push({ name, qty, photos });
+      state.products.push({ name, qty, photos, createdAt: Date.now() });
 
       productName.value = "";
       productQty.value = "1";
       state.currentProductPhotos = [];
       renderAll();
       buildMessage();
-      toast("✅ Producto guardado.");
+      markDirty();
+      if (!options.silent) toast("✅ Producto guardado.");
+      return true;
     }
 
     function removeProduct(idx) {
       const p = state.products[idx];
-      p.photos.forEach(ph => URL.revokeObjectURL(ph.url));
+      if (p) (p.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} });
       state.products.splice(idx, 1);
       renderAll();
       buildMessage();
+      markDirty();
     }
 
     function renderProducts() {
@@ -683,7 +850,7 @@
         const left = document.createElement("div");
         left.innerHTML = `
           <div class="itemTitle">${p.qty} x ${escapeHtml(p.name)}</div>
-          <div class="itemMeta">Fotos: ${p.photos.length}</div>
+          <div class="itemMeta">Fotos: ${(p.photos || []).length}</div>
         `;
 
         const right = document.createElement("div");
@@ -700,7 +867,7 @@
 
         const gal = document.createElement("div");
         gal.className = "gallery";
-        p.photos.slice(0, 6).forEach((ph) => {
+        (p.photos || []).slice(0, 6).forEach((ph) => {
           const t = document.createElement("div");
           t.className = "thumb";
           const img = document.createElement("img");
@@ -710,7 +877,7 @@
         });
 
         box.appendChild(top);
-        if (p.photos.length) box.appendChild(gal);
+        if ((p.photos || []).length) box.appendChild(gal);
         productList.appendChild(box);
       });
 
@@ -722,48 +889,34 @@
       totalUnits.textContent = String(currentUnits + savedUnits);
     }
 
-    function renderAll() {
-      renderGallery(state.labelPhotos, labelGallery, (idx) => {
-        URL.revokeObjectURL(state.labelPhotos[idx].url);
-        state.labelPhotos.splice(idx, 1);
-        renderAll();
-        buildMessage();
-      });
-
-      renderGallery(state.currentProductPhotos, currentProductGallery, (idx) => {
-        URL.revokeObjectURL(state.currentProductPhotos[idx].url);
-        state.currentProductPhotos.splice(idx, 1);
-        renderAll();
-      });
-
-      renderProducts();
-
     function countPhotosInLoad(load) {
       const prodPhotos = (load.products || []).reduce((a, p) => a + ((p.photos || []).length), 0);
-      return { label: (load.labelPhotos || []).length, prod: prodPhotos };
+      return { label: (load.labelPhotos || []).length, prod: prodPhotos, total: (load.labelPhotos || []).length + prodPhotos };
     }
 
     function removeLoad(loadIdx) {
       const load = state.loads[loadIdx];
       if (!load) return;
+      if (!confirm(`¿Eliminar el tracking no. ${loadIdx + 1} del resumen?`)) return;
 
-      // liberar URLs
       (load.labelPhotos || []).forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
       (load.products || []).forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
 
       state.loads.splice(loadIdx, 1);
       renderAll();
       buildMessage();
+      renderFinalSummary();
+      markDirty();
       toast("🗑️ Tracking eliminado.");
     }
 
     function renderLoads() {
-      if (!loadsList || !loadsCount) return;
       loadsCount.textContent = String(state.loads.length);
+      savedPhotosCount.textContent = String(state.loads.reduce((a, l) => a + countPhotosInLoad(l).total, 0));
 
       loadsList.innerHTML = "";
       if (!state.loads.length) {
-        loadsList.innerHTML = `<div class="small">Aún no has guardado trackings.</div>`;
+        loadsList.innerHTML = `<div class="small">Aún no has agregado trackings a esta carga.</div>`;
         return;
       }
 
@@ -779,36 +932,41 @@
 
         const left = document.createElement("div");
         left.innerHTML = `
-          <div class="itemTitle">🔎 ${escapeHtml(load.tracking || "(sin tracking)")}</div>
+          <div class="itemTitle">📦 Tracking no. ${idx + 1}: ${escapeHtml(load.tracking || "(sin tracking)")}</div>
           <div class="itemMeta">Productos: ${(load.products || []).length} • Unidades: ${units} • Fotos etiqueta: ${photos.label} • Fotos productos: ${photos.prod}</div>
         `;
 
         const right = document.createElement("div");
         right.className = "itemBtns";
 
-        const btnShare = document.createElement("button");
-        btnShare.className = "btnMini";
-        btnShare.textContent = "Compartir";
-        btnShare.onclick = () => shareLoad(load);
+        const btnSend = document.createElement("button");
+        btnSend.className = "btnMini primary";
+        btnSend.textContent = "📤 Enviar";
+        btnSend.onclick = () => shareLoad(load, idx);
+
+        const btnCopy = document.createElement("button");
+        btnCopy.className = "btnMini";
+        btnCopy.textContent = "📋 Copiar texto";
+        btnCopy.onclick = () => copyText(buildMessageForLoad(load, idx), "📋 Texto del tracking copiado.");
 
         const btnZip = document.createElement("button");
         btnZip.className = "btnMini";
         btnZip.textContent = "ZIP";
-        btnZip.onclick = () => downloadZipForLoad(load);
+        btnZip.onclick = () => downloadZipForLoad(load, idx);
 
         const btnDel = document.createElement("button");
         btnDel.className = "btnMini danger";
         btnDel.textContent = "Eliminar";
         btnDel.onclick = () => removeLoad(idx);
 
-        right.appendChild(btnShare);
+        right.appendChild(btnSend);
+        right.appendChild(btnCopy);
         right.appendChild(btnZip);
         right.appendChild(btnDel);
 
         top.appendChild(left);
         top.appendChild(right);
 
-        // Preview de 4 fotos (etiqueta + productos)
         const gal = document.createElement("div");
         gal.className = "gallery";
 
@@ -832,62 +990,82 @@
       });
     }
 
-    function resetCurrentEntry() {
-      // Solo borramos el tracking actual (para empezar otro) sin tocar el historial.
-      state.currentProductPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
-      state.currentProductPhotos = [];
+    function renderAll() {
+      renderGallery(state.labelPhotos, labelGallery, (idx) => {
+        URL.revokeObjectURL(state.labelPhotos[idx].url);
+        state.labelPhotos.splice(idx, 1);
+        renderAll();
+        buildMessage();
+        markDirty();
+      });
 
-      state.labelPhotos = [];
-      state.products = [];
+      renderGallery(state.currentProductPhotos, currentProductGallery, (idx) => {
+        URL.revokeObjectURL(state.currentProductPhotos[idx].url);
+        state.currentProductPhotos.splice(idx, 1);
+        renderAll();
+        markDirty();
+      });
 
-      trackingInput.value = "";
-      ocrRaw.value = "";
-      productName.value = "";
-      productQty.value = "1";
-      messageBox.value = "";
-
-      renderAll();
-    }
-
+      renderProducts();
       renderLoads();
+      renderFinalSummary();
     }
 
-    function buildMessageForLoad(load) {
+    function syncShipmentFromInputs() {
+      state.shipment.type = shipmentType.value;
+      state.shipment.despacho = (dispatchDate.value || "").trim();
+      state.shipment.recibida = (receivedDate.value || "").trim();
+      state.shipment.peso = (weightLbs.value || "").trim();
+      state.shipment.volumen = (volumeLbs.value || "").trim();
+      state.shipment.pies = (feetFt3.value || "").trim();
+      state.shipment.costo = (costLps.value || "").trim();
+      renderFinalSummary();
+      markDirty();
+    }
+
+    function syncInputsFromShipment() {
+      shipmentType.value = state.shipment.type || "maritima";
+      dispatchDate.value = state.shipment.despacho || "";
+      receivedDate.value = state.shipment.recibida || "";
+      weightLbs.value = state.shipment.peso || "";
+      volumeLbs.value = state.shipment.volumen || "";
+      feetFt3.value = state.shipment.pies || "";
+      costLps.value = state.shipment.costo || "";
+    }
+
+    function normalizeWithUnit(value, unit) {
+      const v = (value || "").trim();
+      if (!v) return "";
+      return v.toLowerCase().includes(unit.toLowerCase()) ? v : `${v} ${unit}`;
+    }
+
+    function buildMessageForLoad(load, idx = null) {
+      const trackingNo = idx === null ? state.loads.length + 1 : idx + 1;
       const tracking = (load.tracking || "").trim();
       const dateStr = new Date(load.createdAt || Date.now()).toLocaleString();
 
-      let msg = `📦 Registro de carga
-🕒 ${dateStr}
-
-`;
-      msg += `🔎 Tracking: ${tracking || "(pendiente)"}
-`;
-      msg += `🧾 Fotos etiqueta: ${(load.labelPhotos || []).length}
-
-`;
+      let msg = `📦 Tracking no. ${trackingNo}\n`;
+      msg += `🕒 ${dateStr}\n\n`;
+      msg += `🔎 Tracking: ${tracking || "(pendiente)"}\n`;
+      msg += `🧾 Fotos etiqueta: ${(load.labelPhotos || []).length}\n\n`;
 
       const prods = load.products || [];
       if (prods.length) {
-        msg += `🧺 Productos:
-`;
+        msg += `🧺 Productos:\n`;
         prods.forEach((p, i) => {
-          msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${(p.photos || []).length})
-`;
+          msg += `${i + 1}) ${p.qty} x ${p.name} (fotos: ${(p.photos || []).length})\n`;
         });
-        // total oculto en mensaje (solo web)
       } else {
-        msg += `🧺 Productos: (pendiente)
-`;
+        msg += `🧺 Productos:\n(pendiente)\n`;
       }
 
-      msg += `
-—
-Enviado desde mi registro web`;
+      msg += `\n—`;
       return msg;
     }
 
     function getCurrentLoadSnapshot() {
       return {
+        id: `current-${Date.now()}`,
         tracking: (trackingInput.value || "").trim(),
         createdAt: Date.now(),
         labelPhotos: state.labelPhotos,
@@ -897,49 +1075,95 @@ Enviado desde mi registro web`;
 
     function buildMessage() {
       const snap = getCurrentLoadSnapshot();
-      const msg = buildMessageForLoad(snap);
+      const msg = buildMessageForLoad(snap, state.loads.length);
       messageBox.value = msg;
       return msg;
+    }
+
+    function buildFinalSummary() {
+      const s = state.shipment || {};
+      const typeLine = (s.type === "aerea") ? "Carga aérea ✈️" : "Carga marítima ⛴️";
+
+      let msg = `${typeLine}\n\n`;
+      msg += `Despacho: ${s.despacho || ""}\n\n`;
+      msg += `Recibida: ${s.recibida || ""}\n\n`;
+      msg += `Peso: ${normalizeWithUnit(s.peso, "lbs")}\n`;
+      msg += `Volumen: ${normalizeWithUnit(s.volumen, "lbs")}\n`;
+      msg += `Pies: ${normalizeWithUnit(s.pies, "ft³")}\n\n`;
+      msg += `Costo: ${normalizeWithUnit(s.costo, "lps")}\n\n`;
+      msg += `Tracking:\n`;
+
+      if (!state.loads.length) {
+        msg += `(sin trackings agregados)`;
+      } else {
+        state.loads.forEach((load, i) => {
+          msg += `${i + 1}. ${(load.tracking || "(sin tracking)").trim()}\n`;
+        });
+        msg = msg.trimEnd();
+      }
+      return msg;
+    }
+
+    function renderFinalSummary() {
+      finalSummaryBox.value = buildFinalSummary();
     }
 
     function waUrlFromText(text) {
       return `https://wa.me/?text=${encodeURIComponent(text)}`;
     }
 
-    function blobsToFilesForLoad(load) {
+    async function copyText(text, okMsg = "📋 Copiado al portapapeles.") {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast(okMsg);
+        return true;
+      } catch (e) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        let copied = false;
+        try { copied = document.execCommand("copy"); } catch {}
+        document.body.removeChild(ta);
+        toast(copied ? okMsg : "⚠️ No pude copiar automático. Copia el texto manualmente.");
+        return copied;
+      }
+    }
+
+    function blobsToFilesForLoad(load, idx = 0) {
       const files = [];
       (load.labelPhotos || []).forEach((p, i) => {
-        files.push(new File([p.blob], p.name || `etiqueta-${i+1}.jpg`, { type: p.blob.type || "image/jpeg" }));
+        files.push(new File([p.blob], p.name || `tracking-${idx + 1}-etiqueta-${i+1}.jpg`, { type: p.blob.type || "image/jpeg" }));
       });
       (load.products || []).forEach((prod, pi) => {
         (prod.photos || []).forEach((ph, fi) => {
           const safeName = (prod.name || `producto-${pi+1}`).replace(/[^\w\-]+/g, "_");
           const ext = (ph.blob.type || "").includes("png") ? "png" : "jpg";
-          files.push(new File([ph.blob], `${safeName}-${pi+1}-${fi+1}.${ext}`, { type: ph.blob.type || "image/jpeg" }));
+          files.push(new File([ph.blob], `tracking-${idx + 1}-${safeName}-${pi+1}-${fi+1}.${ext}`, { type: ph.blob.type || "image/jpeg" }));
         });
       });
       return files;
     }
 
-    function blobsToFiles() {
-      return blobsToFilesForLoad(getCurrentLoadSnapshot());
-    }
+    async function shareWithFilesIfPossible(load, text, idx = 0) {
+      await copyText(text, "📋 Detalles copiados. Ahora comparte las fotos si tu app lo permite.");
 
-    async function shareWhatsappWithFilesIfPossible(load, text) {
-      const files = blobsToFilesForLoad(load);
+      const files = blobsToFilesForLoad(load, idx);
       const canShareFiles = !!navigator.canShare && files.length > 0 && navigator.canShare({ files });
-
       let usedNativeShare = false;
 
       if (navigator.share && (canShareFiles || files.length === 0)) {
         try {
           await navigator.share({
-            title: "Registro de carga",
+            title: `Tracking no. ${idx + 1}`,
             text,
             files: canShareFiles ? files : undefined
           });
           usedNativeShare = true;
-          toast(canShareFiles ? "✅ Compartido con fotos." : "✅ Compartido.");
+          toast(canShareFiles ? "✅ Enviado con fotos. El texto también quedó copiado." : "✅ Compartido. El texto también quedó copiado.");
         } catch (e) {
           console.warn(e);
         }
@@ -947,27 +1171,65 @@ Enviado desde mi registro web`;
 
       if (!usedNativeShare) {
         window.open(waUrlFromText(text), "_blank");
-        toast("💬 Abrí WhatsApp con el texto. Si no adjuntó fotos, usa ZIP para enviarlas.");
+        toast("💬 Abrí WhatsApp con el texto. Las fotos quedaron listas en ZIP si el navegador no permite adjuntarlas directo.");
       }
     }
 
     async function shareCurrent() {
       const text = messageBox.value || buildMessage();
       const load = getCurrentLoadSnapshot();
-      await shareWhatsappWithFilesIfPossible(load, text);
+      await shareWithFilesIfPossible(load, text, state.loads.length);
     }
 
-    async function shareLoad(load) {
-      const text = load.message || buildMessageForLoad(load);
-      await shareWhatsappWithFilesIfPossible(load, text);
+    async function shareLoad(load, idx) {
+      const text = buildMessageForLoad(load, idx);
+      await shareWithFilesIfPossible(load, text, idx);
     }
 
-    async function archiveAndShareCurrent() {
+    function hasPendingProductData() {
+      return (productName.value || "").trim() || state.currentProductPhotos.length;
+    }
+
+    function ensurePendingProductSaved() {
+      if (!hasPendingProductData()) return true;
+      if (!(productName.value || "").trim()) {
+        toast("⚠️ Tienes fotos de producto sin nombre. Escribe el producto y presiona Guardar producto.");
+        return false;
+      }
+      return addProduct({ silent: true });
+    }
+
+    function clearCurrentEntry(revoke = true) {
+      if (revoke) {
+        state.labelPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+        state.currentProductPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+        state.products.forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
+      }
+
+      state.labelPhotos = [];
+      state.currentProductPhotos = [];
+      state.products = [];
+      trackingInput.value = "";
+      ocrRaw.value = "";
+      productName.value = "";
+      productQty.value = "1";
+      messageBox.value = "";
+      lastLabelFileForOcr = null;
+      renderAll();
+      buildMessage();
+      markDirty();
+    }
+
+    function saveCurrentTrackingToList() {
+      if (!ensurePendingProductSaved()) return null;
+
       const tracking = (trackingInput.value || "").trim();
       const hasSomething = tracking || state.labelPhotos.length || state.products.length;
-      if (!hasSomething) return toast("⚠️ No hay nada que guardar/compartir todavía.");
+      if (!hasSomething) {
+        toast("⚠️ No hay nada que agregar todavía.");
+        return null;
+      }
 
-      // Guardar el tracking actual como un "lote" sin perder el total
       const load = {
         id: `load-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         createdAt: Date.now(),
@@ -975,30 +1237,33 @@ Enviado desde mi registro web`;
         labelPhotos: state.labelPhotos,
         products: state.products
       };
-      load.message = messageBox.value || buildMessageForLoad(load);
 
-      // Lo guardamos en historial
-      state.loads.unshift(load);
-
-      // Compartimos este tracking (individual)
-      await shareLoad(load);
-
-      // Limpiamos SOLO el tracking actual (no el historial)
-      resetCurrentEntry();
-      renderLoads();
-      renderProducts(); // actualiza totales
+      state.loads.push(load);
+      clearCurrentEntry(false);
+      renderAll();
       buildMessage();
+      renderFinalSummary();
+      markDirty();
+      saveAppState(true);
+      toast(`✅ Tracking no. ${state.loads.length} agregado al resumen.`);
+      return { load, idx: state.loads.length - 1 };
+    }
+
+    async function saveAndShareCurrent() {
+      const saved = saveCurrentTrackingToList();
+      if (!saved) return;
+      await shareLoad(saved.load, saved.idx);
     }
 
     function openWhatsappTextOnly() {
-
       const text = messageBox.value || buildMessage();
+      copyText(text, "📋 Texto copiado. También se abrió WhatsApp.");
       window.open(waUrlFromText(text), "_blank");
     }
 
-    async function downloadZipForLoad(load) {
+    async function downloadZipForLoad(load, idx = 0) {
       const zip = new JSZip();
-      const text = load.message || buildMessageForLoad(load);
+      const text = buildMessageForLoad(load, idx);
       zip.file("INFO.txt", text);
 
       const labelFolder = zip.folder("etiqueta");
@@ -1018,7 +1283,7 @@ Enviado desde mi registro web`;
       const blob = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `registro-carga-${(load.tracking || "tracking")}-${Date.now()}.zip`;
+      a.download = `tracking-${idx + 1}-${(load.tracking || "sin-tracking")}-${Date.now()}.zip`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1500);
       toast("⬇️ ZIP descargado.");
@@ -1026,44 +1291,174 @@ Enviado desde mi registro web`;
 
     async function downloadZip() {
       const load = getCurrentLoadSnapshot();
-      load.message = messageBox.value || buildMessageForLoad(load);
-      await downloadZipForLoad(load);
+      await downloadZipForLoad(load, state.loads.length);
     }
 
     function resetAll() {
+      if (!confirm("¿Seguro que deseas borrar todos los trackings, fotos y datos de esta carga para empezar otra?")) return;
 
       stopCamera();
 
-      // Liberar URLs del tracking actual
-      state.labelPhotos.forEach(p => URL.revokeObjectURL(p.url));
-      state.currentProductPhotos.forEach(p => URL.revokeObjectURL(p.url));
-      state.products.forEach(pr => pr.photos.forEach(ph => URL.revokeObjectURL(ph.url)));
-
-      // Liberar URLs del historial
+      state.labelPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+      state.currentProductPhotos.forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
+      state.products.forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
       state.loads.forEach(load => {
         (load.labelPhotos || []).forEach(p => { try { URL.revokeObjectURL(p.url); } catch(e){} });
         (load.products || []).forEach(pr => (pr.photos || []).forEach(ph => { try { URL.revokeObjectURL(ph.url); } catch(e){} }));
       });
 
+      state.shipment = { type: "maritima", despacho: "", recibida: "", peso: "", volumen: "", pies: "", costo: "" };
       state.labelPhotos = [];
       state.currentProductPhotos = [];
       state.products = [];
       state.loads = [];
 
+      syncInputsFromShipment();
       trackingInput.value = "";
       ocrRaw.value = "";
       productName.value = "";
       productQty.value = "1";
       messageBox.value = "";
+      lastLabelFileForOcr = null;
 
       renderAll();
       buildMessage();
-      toast("🧹 Limpio.");
+      renderFinalSummary();
+      markDirty();
+      saveAppState(true);
+      toast("🧹 Listo. Puedes iniciar otra carga.");
     }
 
     function escapeHtml(s) {
       return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
                       .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+    }
+
+    function openDb() {
+      if (dbPromise) return dbPromise;
+      dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return dbPromise;
+    }
+
+    function stripPhotoForSave(p) {
+      if (!p || !p.blob) return null;
+      return {
+        blob: p.blob,
+        name: p.name || `foto-${Date.now()}.jpg`,
+        type: p.type || p.blob.type || "image/jpeg",
+        createdAt: p.createdAt || Date.now()
+      };
+    }
+
+    function stripProductForSave(product) {
+      return {
+        name: product.name || "",
+        qty: product.qty || 1,
+        createdAt: product.createdAt || Date.now(),
+        photos: (product.photos || []).map(stripPhotoForSave).filter(Boolean)
+      };
+    }
+
+    function makePersistableState() {
+      return {
+        shipment: {...state.shipment},
+        labelPhotos: state.labelPhotos.map(stripPhotoForSave).filter(Boolean),
+        currentProductPhotos: state.currentProductPhotos.map(stripPhotoForSave).filter(Boolean),
+        products: state.products.map(stripProductForSave),
+        loads: state.loads.map(load => ({
+          id: load.id,
+          createdAt: load.createdAt || Date.now(),
+          tracking: load.tracking || "",
+          labelPhotos: (load.labelPhotos || []).map(stripPhotoForSave).filter(Boolean),
+          products: (load.products || []).map(stripProductForSave)
+        }))
+      };
+    }
+
+    function restorePhoto(p) {
+      if (!p || !p.blob) return null;
+      return {
+        blob: p.blob,
+        url: URL.createObjectURL(p.blob),
+        name: p.name || `foto-${Date.now()}.jpg`,
+        type: p.type || p.blob.type || "image/jpeg",
+        createdAt: p.createdAt || Date.now()
+      };
+    }
+
+    function restoreProduct(p) {
+      return {
+        name: p.name || "",
+        qty: p.qty || 1,
+        createdAt: p.createdAt || Date.now(),
+        photos: (p.photos || []).map(restorePhoto).filter(Boolean)
+      };
+    }
+
+    async function saveAppState(force = false) {
+      if (!force && !dirty) return;
+      try {
+        const db = await openDb();
+        const tx = db.transaction(DB_STORE, "readwrite");
+        tx.objectStore(DB_STORE).put(makePersistableState(), "main");
+        await new Promise((resolve, reject) => {
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error);
+          tx.onabort = () => reject(tx.error);
+        });
+        dirty = false;
+        setSaveStatus(`Guardado: ${new Date().toLocaleTimeString()}`, "ok");
+      } catch (e) {
+        console.error("Error guardando", e);
+        setSaveStatus("Guardado: error", "warn");
+        toast("⚠️ No se pudo guardar en el navegador. Puede ser falta de espacio.");
+      }
+    }
+
+    async function loadAppState() {
+      try {
+        const db = await openDb();
+        const tx = db.transaction(DB_STORE, "readonly");
+        const req = tx.objectStore(DB_STORE).get("main");
+        const saved = await new Promise((resolve, reject) => {
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+
+        if (saved) {
+          state.shipment = {...state.shipment, ...(saved.shipment || {})};
+          state.labelPhotos = (saved.labelPhotos || []).map(restorePhoto).filter(Boolean);
+          state.currentProductPhotos = (saved.currentProductPhotos || []).map(restorePhoto).filter(Boolean);
+          state.products = (saved.products || []).map(restoreProduct);
+          state.loads = (saved.loads || []).map(load => ({
+            id: load.id || `load-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            createdAt: load.createdAt || Date.now(),
+            tracking: load.tracking || "",
+            labelPhotos: (load.labelPhotos || []).map(restorePhoto).filter(Boolean),
+            products: (load.products || []).map(restoreProduct)
+          }));
+          syncInputsFromShipment();
+          setSaveStatus("Guardado: restaurado", "ok");
+        } else {
+          setSaveStatus("Guardado: listo", "ok");
+        }
+      } catch (e) {
+        console.error("Error restaurando", e);
+        setSaveStatus("Guardado: no disponible", "warn");
+      } finally {
+        restoreDone = true;
+        renderAll();
+        buildMessage();
+        renderFinalSummary();
+      }
     }
 
     btnStartCam.addEventListener("click", startCamera);
@@ -1076,21 +1471,44 @@ Enviado desde mi registro web`;
     btnCaptureLabel.addEventListener("click", captureLabelPhoto);
     btnOcrFromFile.addEventListener("click", ocrFromUploadedFile);
 
-    productFiles.addEventListener("change", (e) => {
-      if (e.target.files?.length) addProductFiles(e.target.files);
+    labelFile.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) await addLabelFile(file);
+      e.target.value = "";
+    });
+
+    productFiles.addEventListener("change", async (e) => {
+      if (e.target.files?.length) await addProductFiles(e.target.files);
       e.target.value = "";
     });
 
     btnCaptureProductPhoto.addEventListener("click", captureProductPhoto);
-    btnAddProduct.addEventListener("click", addProduct);
+    btnAddProduct.addEventListener("click", () => addProduct());
 
-    trackingInput.addEventListener("input", buildMessage);
+    trackingInput.addEventListener("input", () => { buildMessage(); markDirty(); });
+    ocrRaw.addEventListener("input", markDirty);
+    productName.addEventListener("input", markDirty);
+    productQty.addEventListener("input", markDirty);
+    messageBox.addEventListener("input", markDirty);
 
+    [shipmentType, dispatchDate, receivedDate, weightLbs, volumeLbs, feetFt3, costLps].forEach(input => {
+      input.addEventListener("input", syncShipmentFromInputs);
+      input.addEventListener("change", syncShipmentFromInputs);
+    });
+
+    btnSaveCurrentTracking.addEventListener("click", saveCurrentTrackingToList);
     btnShareWhatsapp.addEventListener("click", shareCurrent);
-    btnShareWhatsappOne.addEventListener("click", archiveAndShareCurrent);
+    btnShareWhatsappOne.addEventListener("click", saveAndShareCurrent);
     btnOpenWhatsappText.addEventListener("click", openWhatsappTextOnly);
     btnDownloadZip.addEventListener("click", downloadZip);
 
+    btnCopyFinalSummary.addEventListener("click", () => copyText(buildFinalSummary(), "📋 Resumen final copiado."));
+    btnOpenWhatsappSummary.addEventListener("click", () => {
+      const text = buildFinalSummary();
+      copyText(text, "📋 Resumen final copiado. También se abrió WhatsApp.");
+      window.open(waUrlFromText(text), "_blank");
+    });
+    btnClearAllTrackings.addEventListener("click", resetAll);
     btnReset.addEventListener("click", resetAll);
 
     renderAll();
@@ -1100,6 +1518,12 @@ Enviado desde mi registro web`;
     if (!window.isSecureContext) {
       toast("⚠️ Estás en file:// (no seguro). Sube a GitHub Pages (HTTPS) o usa localhost para la cámara.");
     }
+
+    loadAppState();
+    setInterval(() => saveAppState(false), 2000);
+    window.addEventListener("beforeunload", () => {
+      if (dirty) saveAppState(true);
+    });
   </script>
 </body>
 </html>
