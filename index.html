@@ -959,10 +959,14 @@
         header.className = "trackingHeader";
 
         const left = document.createElement("div");
+        const productSummaryHtml = (load.products || []).length
+          ? `<div class="itemMeta mt">${(load.products || []).map(p => `• ${escapeHtml(String(p.qty || 1))} x ${escapeHtml(p.name || "Producto sin nombre")}`).join("<br>")}</div>`
+          : `<div class="itemMeta mt">• Sin productos agregados</div>`;
         left.innerHTML = `
           <div class="itemTitle">📦 Tracking no. ${idx + 1}</div>
           <div class="itemMeta"><span class="k">${escapeHtml(load.tracking || "(sin tracking)")}</span></div>
           <div class="itemMeta">Productos: ${(load.products || []).length} • Unidades: ${units} • Fotos etiqueta: ${photos.label} • Fotos productos: ${photos.prod}</div>
+          ${productSummaryHtml}
         `;
 
         header.appendChild(left);
@@ -1137,15 +1141,34 @@
       msg += `Volumen: ${normalizeWithUnit(s.volumen, "lbs")}\n`;
       msg += `Pies: ${normalizeWithUnit(s.pies, "ft³")}\n\n`;
       msg += `Costo: ${normalizeWithUnit(s.costo, "lps")}\n\n`;
-      msg += `Tracking:\n`;
+      msg += `Trackings:\n\n`;
 
       if (!state.loads.length) {
-        msg += `(sin trackings agregados)`;
+        msg += `(sin trackings agregados)\n\n`;
+        msg += `Total de productos: 0`;
       } else {
+        let totalItems = 0;
         state.loads.forEach((load, i) => {
-          msg += `${i + 1}. ${(load.tracking || "(sin tracking)").trim()}\n`;
+          const prods = load.products || [];
+          const items = prods.reduce((acc, p) => acc + (Number(p.qty) || 0), 0);
+          totalItems += items;
+
+          msg += `${i + 1}. ${(load.tracking || "(sin tracking)").trim()} (items: ${items})\n`;
+
+          if (prods.length) {
+            prods.forEach((p) => {
+              const qty = Number(p.qty) || 1;
+              const name = (p.name || "Producto sin nombre").trim();
+              msg += `   - ${qty} x ${name}\n`;
+            });
+          } else {
+            msg += `   - (sin productos agregados)\n`;
+          }
+
+          if (i < state.loads.length - 1) msg += `\n`;
         });
         msg = msg.trimEnd();
+        msg += `\n\nTotal de productos: ${totalItems}`;
       }
       return msg;
     }
