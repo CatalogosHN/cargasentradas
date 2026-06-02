@@ -77,6 +77,20 @@
     }
     .badge.ok{color:#bfffe3;border-color:rgba(25,195,125,.35)}
     .badge.warn{color:#ffe8a6;border-color:rgba(255,209,102,.35)}
+    .flowBanner{
+      border:1px solid rgba(43,124,255,.45);
+      background:linear-gradient(135deg,rgba(43,124,255,.16),rgba(25,195,125,.08));
+      border-radius:16px;
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      margin-bottom:12px;
+    }
+    .flowTitle{font-weight:800;font-size:15px;color:#ffffff;margin-bottom:3px}
+    .flowBanner .btn{white-space:normal;text-align:center}
+    @media (max-width:650px){.flowBanner{flex-direction:column;align-items:stretch}.flowBanner .btn{width:100%}}
     .cameraWrap{display:flex;flex-direction:column;gap:10px}
     .cameraHeader{display:flex;flex-direction:column;gap:8px}
     .videoBox{
@@ -285,6 +299,14 @@
     <section class="card">
       <h2>2) Productos del tracking actual</h2>
 
+      <div class="flowBanner">
+        <div>
+          <div id="currentTrackingTitle" class="flowTitle">✍️ Estás llenando: Tracking no. 1</div>
+          <div id="currentTrackingSubtitle" class="small">Puedes agregar varios productos dentro de este mismo tracking antes de guardarlo.</div>
+        </div>
+        <button id="btnFinishTrackingFromProducts" class="btn">✅ Guardar Tracking no. 1 y empezar no. 2</button>
+      </div>
+
       <div class="grid2">
         <div>
           <label class="lbl">Producto</label>
@@ -301,7 +323,15 @@
               <input id="productFiles" type="file" accept="image/*" multiple />
             </label>
 
-            <button id="btnAddProduct" class="btn">➕ Guardar producto</button>
+            <button id="btnAddProduct" class="btn">➕ Guardar producto en Tracking no. 1</button>
+          </div>
+
+          <div class="row wrap mt">
+            <button id="btnAddAnotherProduct" class="btn ghost">➕ Agregar otro producto al mismo tracking</button>
+          </div>
+
+          <div class="small mt">
+            Cada vez que toques el botón se guarda ese producto en la lista de este tracking. Después puedes llenar otro producto y volver a tocarlo.
           </div>
 
           <div class="mt">
@@ -332,7 +362,7 @@
       <textarea id="messageBox" class="textarea" rows="10"></textarea>
 
       <div class="row wrap mt">
-        <button id="btnSaveCurrentTracking" class="btn">➕ Agregar tracking al resumen</button>
+        <button id="btnSaveCurrentTracking" class="btn">✅ Guardar Tracking no. 1 y empezar no. 2</button>
         <button id="btnShareWhatsapp" class="btn ghost">📤 Guardar y enviar tracking</button>
         <button id="btnShareWhatsappOne" class="btn ghost">💾 Guardar + enviar</button>
         <button id="btnOpenWhatsappText" class="btn ghost">💬 WhatsApp solo texto</button>
@@ -403,6 +433,10 @@
     const btnCaptureProductPhoto = el("btnCaptureProductPhoto");
     const productFiles = el("productFiles");
     const btnAddProduct = el("btnAddProduct");
+    const btnAddAnotherProduct = el("btnAddAnotherProduct");
+    const btnFinishTrackingFromProducts = el("btnFinishTrackingFromProducts");
+    const currentTrackingTitle = el("currentTrackingTitle");
+    const currentTrackingSubtitle = el("currentTrackingSubtitle");
     const currentProductGallery = el("currentProductGallery");
     const productList = el("productList");
     const totalProducts = el("totalProducts");
@@ -853,7 +887,7 @@
       renderAll();
       buildMessage();
       markDirty();
-      if (!options.silent) toast("✅ Producto guardado.");
+      if (!options.silent) toast("✅ Producto agregado a este tracking. Puedes agregar otro producto o guardar el tracking.");
       return true;
     }
 
@@ -868,6 +902,9 @@
 
     function renderProducts() {
       productList.innerHTML = "";
+      if (!state.products.length) {
+        productList.innerHTML = `<div class="small">Aún no hay productos en el Tracking no. ${state.loads.length + 1}. Puedes agregar 1 producto o varios productos en este mismo tracking antes de guardarlo.</div>`;
+      }
       state.products.forEach((p, idx) => {
         const box = document.createElement("div");
         box.className = "item";
@@ -1040,7 +1077,25 @@
       });
     }
 
+    function updateFlowLabels() {
+      const n = state.loads.length + 1;
+      const currentItems = state.products.reduce((a, p) => a + (Number(p.qty) || 0), 0);
+      const currentProductLines = state.products.length;
+
+      if (currentTrackingTitle) currentTrackingTitle.textContent = `✍️ Estás llenando: Tracking no. ${n}`;
+      if (currentTrackingSubtitle) {
+        currentTrackingSubtitle.textContent = `En este tracking llevas ${currentProductLines} producto(s) guardado(s), ${currentItems} unidad(es), ${state.labelPhotos.length} foto(s) de etiqueta. Puedes seguir agregando productos al mismo tracking o guardarlo para pasar al Tracking no. ${n + 1}.`;
+      }
+      if (btnAddProduct) btnAddProduct.textContent = `➕ Guardar producto en Tracking no. ${n}`;
+      if (btnAddAnotherProduct) btnAddAnotherProduct.textContent = `➕ Agregar otro producto al Tracking no. ${n}`;
+      if (btnFinishTrackingFromProducts) btnFinishTrackingFromProducts.textContent = `✅ Guardar Tracking no. ${n} y empezar no. ${n + 1}`;
+      if (btnSaveCurrentTracking) btnSaveCurrentTracking.textContent = `✅ Guardar Tracking no. ${n} y empezar no. ${n + 1}`;
+      if (btnShareWhatsapp) btnShareWhatsapp.textContent = `📤 Guardar y enviar Tracking no. ${n}`;
+      if (btnShareWhatsappOne) btnShareWhatsappOne.textContent = `💾 Guardar + enviar no. ${n}`;
+    }
+
     function renderAll() {
+      updateFlowLabels();
       renderGallery(state.labelPhotos, labelGallery, (idx) => {
         URL.revokeObjectURL(state.labelPhotos[idx].url);
         state.labelPhotos.splice(idx, 1);
@@ -1144,7 +1199,9 @@
       msg += `Trackings:\n\n`;
 
       if (!state.loads.length) {
-        msg += `(sin trackings agregados)\n\n`;
+        msg += `(sin trackings agregados)
+
+`;
         msg += `Total de productos: 0`;
       } else {
         let totalItems = 0;
@@ -1153,22 +1210,28 @@
           const items = prods.reduce((acc, p) => acc + (Number(p.qty) || 0), 0);
           totalItems += items;
 
-          msg += `${i + 1}. ${(load.tracking || "(sin tracking)").trim()} (items: ${items})\n`;
+          msg += `${i + 1}. ${(load.tracking || "(sin tracking)").trim()} (items: ${items})
+`;
 
           if (prods.length) {
             prods.forEach((p) => {
               const qty = Number(p.qty) || 1;
               const name = (p.name || "Producto sin nombre").trim();
-              msg += `   - ${qty} x ${name}\n`;
+              msg += `   - ${qty} x ${name}
+`;
             });
           } else {
-            msg += `   - (sin productos agregados)\n`;
+            msg += `   - (sin productos agregados)
+`;
           }
 
-          if (i < state.loads.length - 1) msg += `\n`;
+          if (i < state.loads.length - 1) msg += `
+`;
         });
         msg = msg.trimEnd();
-        msg += `\n\nTotal de productos: ${totalItems}`;
+        msg += `
+
+Total de productos: ${totalItems}`;
       }
       return msg;
     }
@@ -1564,6 +1627,8 @@
 
     btnCaptureProductPhoto.addEventListener("click", captureProductPhoto);
     btnAddProduct.addEventListener("click", () => addProduct());
+    btnAddAnotherProduct.addEventListener("click", () => addProduct());
+    btnFinishTrackingFromProducts.addEventListener("click", saveCurrentTrackingToList);
 
     trackingInput.addEventListener("input", () => { buildMessage(); markDirty(); });
     ocrRaw.addEventListener("input", markDirty);
